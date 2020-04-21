@@ -13,6 +13,6 @@ int main(int argc, char **argv)
 	printf("main:\n");
 	printf("  mov rax, %d\n", atoi(argv[1]));
 	printf("  ret\n");
-	return 0;
+return 0;
 
 }
