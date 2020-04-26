@@ -180,8 +180,9 @@ Node *new_num(int val)
 //最初は+,-の処理を構文木を使って処理できるようにする
 Node *expr();
 Node *mul();
-Node *num();
+Node *primary();
 
+// expr = mul ("+" mul | "-"mul)*
 Node *expr()
 {
 	Node *node = mul();
@@ -199,16 +200,17 @@ Node *expr()
 	}
 }
 
+//mul = primary ("*"primary | "/"primary)*
 Node *mul()
 {
-	Node *node = num();
+	Node *node = primary();
 
 	for(;;){
 		if(consume('*')){
-			node = new_binary(ND_MUL, node, num());
+			node = new_binary(ND_MUL, node, primary());
 		}
 		else if(consume('/')){
-			node = new_binary(ND_DIV, node, num());
+			node = new_binary(ND_DIV, node, primary());
 		}
 		else{
 			return node;
@@ -216,8 +218,15 @@ Node *mul()
 	}
 }
 
-Node *num()
+//primary = num | "("expr")"
+Node *primary()
 {
+	if(consume('(')){
+		Node *node = expr();
+		consume(')');
+		return node;
+	}
+
 	return new_num(expect_number());
 }
 
