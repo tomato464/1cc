@@ -119,7 +119,7 @@ Token *tokenize()
 			continue;
 		}
 
-		if(*p == '+' || *p == '-'){
+		if(strchr("+-*/()", *p)){
 			cur = new_token(TK_RESERVED, cur, p);
 			p++;
 			continue;
@@ -179,18 +179,36 @@ Node *new_num(int val)
 
 //最初は+,-の処理を構文木を使って処理できるようにする
 Node *expr();
+Node *mul();
 Node *num();
 
 Node *expr()
 {
-	Node *node = num();
+	Node *node = mul();
 	
 	for(;;){
 		if(consume('+')){
-			node = new_binary(ND_ADD, node, num());
+			node = new_binary(ND_ADD, node, mul());
 		}
 		else if(consume('-')){
-			node = new_binary(ND_SUB, node, num());
+			node = new_binary(ND_SUB, node, mul());
+		}
+		else{
+			return node;
+		}
+	}
+}
+
+Node *mul()
+{
+	Node *node = num();
+
+	for(;;){
+		if(consume('*')){
+			node = new_binary(ND_MUL, node, num());
+		}
+		else if(consume('/')){
+			node = new_binary(ND_DIV, node, num());
 		}
 		else{
 			return node;
@@ -225,10 +243,11 @@ void gen(Node *node)
 			printf("	sub	rax,rdi\n");
 			break;
 		case ND_MUL:
-			printf("	mul	rax,rdi\n");
+			printf("	imul	rax,rdi\n");
 			break;
 		case ND_DIV:
-			printf("	div	rax,rdi\n");
+			printf("	cqo\n");
+			printf("	idiv	rdi\n");
 			break;
 	}
 	printf("	push	rax\n");
