@@ -76,7 +76,7 @@ void expect(char *op)
 {
 	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)){
-		error_at(token->str, "'%c'ではありません", op);
+		error_at(token->str, "'%s'ではありません", op);
 	}
 	token = token->next;
 }
@@ -132,6 +132,7 @@ Token *tokenize()
 			startswith(p, ">=") || startswith(p, "<=")){
 			cur = new_token(TK_RESERVED, cur, p, 2);
 			p += 2;
+			continue;
 		}
 
 		if(strchr("+-*/()<>", *p)){
@@ -148,18 +149,22 @@ Token *tokenize()
 			continue;
 		}
 
-		error_at(p, "数でない");
+		error_at(p, "invalid token");
 	}
 	new_token(TK_EOF, cur, p, 0);
 	return head.next;
 }
 
 typedef enum{
-	ND_ADD,//+
-	ND_SUB,//-
-	ND_MUL,//*
-	ND_DIV,// /
-	ND_NUM,//integer
+	ND_ADD,	// +
+	ND_SUB,	// -
+	ND_MUL,	// *
+	ND_DIV,	// /
+	ND_EQ,	// ==
+	ND_NE,	// !=
+	ND_LT,	// <
+	ND_LE,	// <=
+	ND_NUM,	// integer
 } Nodekind;
 
 typedef struct Node Node;
@@ -196,12 +201,63 @@ Node *new_num(int val)
 
 //最初は+,-の処理を構文木を使って処理できるようにする
 Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
 
-// expr = mul ("+" mul | "-"mul)*
+//expr = equality
 Node *expr()
+{
+	return equality();
+}
+
+//equality = relational ("=="relational | "!="relational)*
+Node *equality()
+{
+	Node *node = relational();
+	
+	for(;;){
+		if(consume("==")){
+			node = new_binary(ND_EQ, node, relational());
+		}
+		else if(consume("!=")){
+			node = new_binary(ND_NE, node, relational());
+		}
+		else{
+			return node;
+		}
+	}
+}
+
+//relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+Node *relational()
+{
+	Node *node = add();
+
+	for(;;){
+		if(consume("<")){
+			node = new_binary(ND_LT, node, add());
+		}
+		else if(consume(">")){
+			node = new_binary(ND_LT, add(), node);
+		}
+		else if(consume("<=")){
+			node = new_binary(ND_LE, node, add());
+		}
+		else if(consume(">=")){
+			node = new_binary(ND_LE, add(), node);
+		}
+		else{
+			return node;
+		}
+	}
+}
+
+// add = mul ("+" mul | "-"mul)*
+Node *add()
 {
 	Node *node = mul();
 	
