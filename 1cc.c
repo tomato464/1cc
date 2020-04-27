@@ -180,6 +180,7 @@ Node *new_num(int val)
 //最初は+,-の処理を構文木を使って処理できるようにする
 Node *expr();
 Node *mul();
+Node *unary();
 Node *primary();
 
 // expr = mul ("+" mul | "-"mul)*
@@ -200,22 +201,37 @@ Node *expr()
 	}
 }
 
-//mul = primary ("*"primary | "/"primary)*
+//mul = unary ("*"unary | "/"unary)*
 Node *mul()
 {
-	Node *node = primary();
+	Node *node = unary();
 
 	for(;;){
 		if(consume('*')){
-			node = new_binary(ND_MUL, node, primary());
+			node = new_binary(ND_MUL, node, unary());
 		}
 		else if(consume('/')){
-			node = new_binary(ND_DIV, node, primary());
+			node = new_binary(ND_DIV, node, unary());
 		}
 		else{
 			return node;
 		}
 	}
+}
+
+//unary = ('+' | '-')?primary
+Node *unary()
+{
+	if(consume('+')){
+		return primary();
+	}
+	else if(consume('-')){
+		return new_binary(ND_SUB, new_num(0), primary()); 
+	}
+	else{
+		return primary();
+	}
+	
 }
 
 //primary = num | "("expr")"
