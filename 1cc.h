@@ -44,6 +44,8 @@ void expect(char *op);
 //真を返す。それ以外の時には偽を返す
 bool consume(char *op);
 
+Token *consume_ident();
+
 //次のトークンが数値の場合、トークンを一つ進めてその数値を返す
 //それ以外の場合にはエラーを報告する
 int expect_number();

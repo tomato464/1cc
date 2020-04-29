@@ -37,6 +37,18 @@ bool consume(char *op)
 	return true;
 }
 
+//次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
+//それ以外の時はNoneを返すl 
+Token *consume_ident()
+{
+	if(token->kind != TK_IDENT){
+		return NULL;
+	}
+	Token *local_value = token;
+	token = token->next;
+	return local_value;
+}
+
 //次のトークンが期待している記号の時には、トークンを一つ読み進める。
 //それ以外の場合にはエラーを報告する。
 void expect(char *op)

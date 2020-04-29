@@ -155,5 +155,13 @@ Node *primary()
 		return node;
 	}
 
+	Token *tok = consume_ident();
+	if(tok){
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_LVAR;
+		node->offset = (tok->str[0] - 'a' + 1) * 8;
+		return node;	
+	}
+
 	return new_num(expect_number());
 }
