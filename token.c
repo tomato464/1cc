@@ -129,7 +129,7 @@ Token *tokenize()
 		if(is_alpha(*p)){
 			char *q = p;
 			p++;
-			while(is_alpha(*p)){
+			while(is_alnum(*p)){
 				p++;
 			}
 			cur = new_token(TK_IDENT, cur, q, p - q);

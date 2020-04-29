@@ -21,6 +21,17 @@ Node *new_num(int val)
 	return node;
 }
 
+//変数名を検索する。見つからなかった場合はNULLを返す。
+LVar *find_lvar(Token *tok)
+{
+	for(LVar *var = locals; var; var = var->next){
+		if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
+			return var;
+		}
+	}
+	return NULL;
+}
+
 void program(){
 	int i = 0;
 	while(!at_eof()){
@@ -159,8 +170,25 @@ Node *primary()
 	if(tok){
 		Node *node = calloc(1, sizeof(Node));
 		node->kind = ND_LVAR;
-		node->offset = (tok->str[0] - 'a' + 1) * 8;
-		return node;	
+
+		LVar *lvar = find_lvar(tok);
+		if(lvar){
+			node->offset = lvar->offset;	
+		}
+		else{
+			lvar = calloc(1, sizeof(LVar));
+			lvar->next = locals;
+			lvar->name = tok->str;
+			lvar->len = tok->len;
+			if(locals == NULL){
+				lvar->offset = 8;
+			}else{
+				lvar->offset = locals->offset + 8;
+			}
+			node->offset = lvar->offset;
+			locals = lvar;
+		}
+		return node;
 	}
 
 	return new_num(expect_number());

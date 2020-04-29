@@ -91,6 +91,21 @@ struct Node
 };
 Node *code[100];
 
+typedef struct LVar LVar;
+
+struct LVar
+{
+	LVar *next;	//次の変数がNULL
+	char *name;	//変数の名前
+	int len;	//名前の長さ
+	int offset;	//RBPからのオフセット
+};
+
+//ローカル変数
+LVar *locals;
+
+LVar *find_lvar(Token *tok);
+
 Node *new_node(Nodekind kind);
 
 Node *new_binary(Nodekind kind, Node *lhs, Node *rhs);
