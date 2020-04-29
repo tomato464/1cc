@@ -55,6 +55,10 @@ bool at_eof();
 //新しいトークンを生成してcurに繋げる
 Token *new_token(Tokenkind kind, Token *cur, char *str, int len);
 
+bool alpha(char c);
+
+bool alnum(char c);
+
 bool startswith(char *p, char *q);
 
 //入力文字列pをトークナイズしてそれを返す
