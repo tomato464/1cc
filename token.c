@@ -94,6 +94,13 @@ Token *tokenize()
 			p++;
 			continue;
 		}
+
+		if('a' <= *p && *p <= 'z'){
+			cur = new_token(TK_IDENT, cur, p, 1);
+			p++;
+			continue;
+		}
+		
 		//複数文字
 		if(startswith(p, "==") || startswith(p, "!=") ||
 			startswith(p, ">=") || startswith(p, "<=")){

@@ -9,6 +9,7 @@
 typedef enum
 {
 	TK_RESERVED,	//記号
+	TK_IDENT,	//変数
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -37,6 +38,8 @@ void error(char *fmt, ...);
 
 void error_at(char *loc, char *fmt, ...);
 
+
+void expect(char *op);
 //次のトークンが期待している記号の時には、トークンを一つ進めて
 //真を返す。それ以外の時には偽を返す
 bool consume(char *op);
@@ -57,15 +60,17 @@ Token *tokenize();
 
 //parser.c
 typedef enum{
-	ND_ADD,	// +
-	ND_SUB,	// -
-	ND_MUL,	// *
-	ND_DIV,	// /
-	ND_EQ,	// ==
-	ND_NE,	// !=
-	ND_LT,	// <
-	ND_LE,	// <=
-	ND_NUM,	// integer
+	ND_ADD,		// +
+	ND_SUB,		// -
+	ND_MUL,		// *
+	ND_DIV,		// /
+	ND_EQ,		// ==
+	ND_NE,		// !=
+	ND_LT,		// <
+	ND_LE,		// <=
+	ND_ASSIGN,	// =
+	ND_LVAR,	// Local変数
+	ND_NUM,		// integer
 } Nodekind;
 
 typedef struct Node Node;
@@ -76,7 +81,9 @@ struct Node
 	Node *lhs;	//左辺
 	Node *rhs;	//右辺
 	int val;	//ND_NUMの時のみ使う
+	int offset;	//kindがND_LVARの時にのみ使う
 };
+Node *code[100];
 
 Node *new_node(Nodekind kind);
 
@@ -85,7 +92,10 @@ Node *new_binary(Nodekind kind, Node *lhs, Node *rhs);
 Node *new_num(int val);
 
 //最初は+,-の処理を構文木を使って処理できるようにする
+void program();
+Node *stmt();
 Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
