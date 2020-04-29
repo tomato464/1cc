@@ -39,7 +39,7 @@ bool consume(char *op)
 
 //次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
 //それ以外の時はNoneを返すl 
-Token *consume_ident()
+Token *consume_ident(void)
 {
 	if(token->kind != TK_IDENT){
 		return NULL;
@@ -106,7 +106,7 @@ Token *tokenize()
 			p++;
 			continue;
 		}
-
+		//ローカル変数
 		if('a' <= *p && *p <= 'z'){
 			cur = new_token(TK_IDENT, cur, p, 1);
 			p++;
@@ -121,7 +121,7 @@ Token *tokenize()
 			continue;
 		}
 
-		if(strchr("+-*/()<>", *p)){
+		if(strchr("+-*/()<>;=", *p)){
 			cur = new_token(TK_RESERVED, cur, p, 1);
 			p++;
 			continue;
@@ -135,7 +135,7 @@ Token *tokenize()
 			continue;
 		}
 
-		error_at(p, "invalid token");
+		error_at(p, "invalid token!");
 	}
 	new_token(TK_EOF, cur, p, 0);
 	return head.next;

@@ -46,7 +46,7 @@ Node *assign()
 {
 	Node *node = equality();
 	if(consume("=")){
-		node = new_binary(ND_ASSIGN, node, equality());
+		node = new_binary(ND_ASSIGN, node, assign());
 	}
 	else{
 		return node;
