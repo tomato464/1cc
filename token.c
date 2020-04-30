@@ -125,6 +125,13 @@ Token *tokenize()
 			continue;
 		}
 
+		//return文の判定
+		if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])){
+			cur = new_token(TK_RETURN, cur, p, 6);
+			p += 6;
+			continue;
+		}
+
 		//ローカル変数
 		if(is_alpha(*p)){
 			char *q = p;
