@@ -58,7 +58,12 @@ Node *stmt()
 		consume("(");
 		node->lhs = expr();
 		consume(")");
-		node->rhs = stmt();
+		node->rhs = calloc(1, sizeof(Node));
+		node->rhs->lhs = stmt();
+		if(consume_else()){
+			node->rhs->kind = ND_ELSE;
+			node->rhs->rhs = stmt();
+		}
 		return node;
 	}
 	else{

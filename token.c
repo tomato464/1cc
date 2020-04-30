@@ -55,6 +55,14 @@ bool consume_if(void)
 	return true;
 }
 
+bool consume_else(void)
+{
+	if(token->kind != TK_ELSE){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
 
 bool consume_while(void)
 {
@@ -173,6 +181,14 @@ Token *tokenize()
 			p += 2;
 			continue;
 		}
+
+		//else文の判定
+		if(strncmp(p, "else", 4) == 0 && !is_alnum(p[4])){
+			cur = new_token(TK_ELSE, cur, p, 4);
+			p += 4;
+			continue;
+		}
+
 
 		//while文の判定
 		if(strncmp(p, "while", 5) == 0 && !is_alnum(p[5])){

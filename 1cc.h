@@ -12,6 +12,7 @@ typedef enum
 	TK_IDENT,	//変数
 	TK_RETURN,	//returnトークン
 	TK_IF,		// ifトークン
+	TK_ELSE,	// elseトークン
 	TK_WHILE,	// whie
 	TK_FOR,		// for
 	TK_NUM,		//整数トークン
@@ -52,6 +53,8 @@ bool consume_return(void);
 
 bool consume_if(void);
 
+bool consume_else(void);
+
 bool consume_while(void);
 
 bool consume_for(void);
@@ -89,6 +92,7 @@ typedef enum{
 	ND_ASSIGN,	// =
 	ND_RETURN,	// return
 	ND_IF,		//if
+	ND_ELSE,	// else
 	ND_WHILE,	//while
 	ND_FOR,		//for
 	ND_LVAR,	// Local変数
