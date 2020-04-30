@@ -46,6 +46,32 @@ bool consume_return(void)
 	return true;
 }
 
+bool consume_if(void)
+{
+	if(token->kind != TK_IF){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+
+
+bool consume_while(void)
+{
+	if(token->kind != TK_WHILE){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+bool consume_for(void)
+{
+	if(token->kind != TK_FOR){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
 //次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
 //それ以外の時はNoneを返すl 
 Token *consume_ident(void)
@@ -141,6 +167,26 @@ Token *tokenize()
 			continue;
 		}
 
+		//if文の判定
+		if(strncmp(p, "if", 2) == 0 && !is_alnum(p[2])){
+			cur = new_token(TK_IF, cur, p, 2);
+			p += 2;
+			continue;
+		}
+
+		//while文の判定
+		if(strncmp(p, "while", 5) == 0 && !is_alnum(p[5])){
+			cur = new_token(TK_WHILE, cur, p, 5);
+			p += 5;
+			continue;
+		}
+
+		//for文の判定
+		if(strncmp(p, "for", 3) == 0 && !is_alnum(p[3])){
+			cur = new_token(TK_FOR, cur, p, 3);
+			p += 3;
+			continue;
+		}
 		//ローカル変数
 		if(is_alpha(*p)){
 			char *q = p;

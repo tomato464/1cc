@@ -11,6 +11,9 @@ typedef enum
 	TK_RESERVED,	//記号
 	TK_IDENT,	//変数
 	TK_RETURN,	//returnトークン
+	TK_IF,		// ifトークン
+	TK_WHILE,	// whie
+	TK_FOR,		// for
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -47,6 +50,12 @@ bool consume(char *op);
 
 bool consume_return(void);
 
+bool consume_if(void);
+
+bool consume_while(void);
+
+bool consume_for(void);
+
 Token *consume_ident(void);
 
 //次のトークンが数値の場合、トークンを一つ進めてその数値を返す
@@ -79,6 +88,9 @@ typedef enum{
 	ND_LE,		// <=
 	ND_ASSIGN,	// =
 	ND_RETURN,	// return
+	ND_IF,		//if
+	ND_WHILE,	//while
+	ND_FOR,		//for
 	ND_LVAR,	// Local変数
 	ND_NUM,		// integer
 } Nodekind;

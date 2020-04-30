@@ -49,14 +49,26 @@ Node *stmt()
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_RETURN;
 		node->lhs = expr();
+		consume(";");
+		return node;
+	}
+	else if(consume_if()){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_IF;
+		consume("(");
+		node->lhs = expr();
+		consume(")");
+		node->rhs = stmt();
+		return node;
 	}
 	else{
-		node = expr();
+		node  = expr();
 	}
 
 	if(!consume(";")){
-		error_at(token->str, "';'ではないです");
+		error("ここでミス");
 	}
+
 	return node;
 }
 

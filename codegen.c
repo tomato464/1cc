@@ -35,6 +35,15 @@ void gen(Node *node)
 			printf("	mov	[rax],rdi\n");
 			printf("	push	rdi\n");
 			return;
+		case ND_IF:
+			gen(node->lhs);
+			printf("	pop	rax\n");
+			printf("	cmp	rax,0\n");
+			printf("	je	.Lend1\n");
+			gen(node->rhs);
+			printf(".Lend1:\n");
+			return;
+
 		case ND_RETURN:
 			gen(node->lhs);
 			printf("	pop	rax\n");
@@ -42,10 +51,6 @@ void gen(Node *node)
 			printf("	pop	rbp\n");
 			printf("	ret\n");
 			return;
-	}
-	if(node->kind == ND_NUM){
-		printf("	push	%d\n", node->val);
-		return;
 	}
 
 	gen(node->lhs);
