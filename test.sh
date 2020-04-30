@@ -45,5 +45,6 @@ assert 0 "53 <= 21;"
 assert 50 "b = 50; b;" 
 assert 14 "a = 4; b = 10; a + b;"
 assert 14 "foo = 4; two = 10; foo + two;"
-
+assert 43 "x = 11; y = 32; return x + y;"
+assert 42 "x = 32; return 42; return 30;"
 echo OK
