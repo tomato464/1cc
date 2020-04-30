@@ -37,6 +37,15 @@ bool consume(char *op)
 	return true;
 }
 
+bool consume_return(void)
+{
+	if(token->kind != TK_RETURN){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+
 //次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
 //それ以外の時はNoneを返すl 
 Token *consume_ident(void)

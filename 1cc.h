@@ -45,6 +45,8 @@ void expect(char *op);
 //真を返す。それ以外の時には偽を返す
 bool consume(char *op);
 
+bool consume_return(void);
+
 Token *consume_ident(void);
 
 //次のトークンが数値の場合、トークンを一つ進めてその数値を返す
@@ -76,6 +78,7 @@ typedef enum{
 	ND_LT,		// <
 	ND_LE,		// <=
 	ND_ASSIGN,	// =
+	ND_RETURN,	// return
 	ND_LVAR,	// Local変数
 	ND_NUM,		// integer
 } Nodekind;
