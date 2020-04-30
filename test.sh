@@ -53,4 +53,5 @@ assert 42 "x = 42; if(x == 10)x = 10;return x;"
 assert 20 "x = 42; if(x == 50)x = 10;if(x == 42)x = 20; return x;"
 assert 43 "x = 10; if(x == 5)x = 20; else x = 43; return x;"
 assert 20 "x = 5; if(x == 5) x = 20; else x = 43;return x;"
+assert 30 "x = 5;y = 2; if(x == 5)if(y == 2) x = 30; return x;"
 echo OK

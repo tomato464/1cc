@@ -46,7 +46,7 @@ Node *stmt()
 	Node *node;
 
 	if(consume_return()){
-		node = calloc(1, sizeof(Node));
+		node = calloc(1, sizeof(Node));//return文はネストされないからこうしてもいい
 		node->kind = ND_RETURN;
 		node->lhs = expr();
 		consume(";");
@@ -64,6 +64,15 @@ Node *stmt()
 			node->rhs->kind = ND_ELSE;
 			node->rhs->rhs = stmt();
 		}
+		return node;
+	}
+	else if(consume_while()){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_WHILE;
+		consume("(");
+		node->lhs = expr();
+		consume(")");
+		node->rhs = stmt();
 		return node;
 	}
 	else{
