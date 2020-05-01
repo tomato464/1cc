@@ -65,7 +65,7 @@ void gen(Node *node)
 			printf("	je	.Lend%d\n", tmp);
 			gen(node->rhs);
 			printf("	jmp	.Lbegin%d\n", tmp);
-			printf(".Lend%d\n", tmp);
+			printf(".Lend%d:\n", tmp);
 			label++;
 			return;
 
