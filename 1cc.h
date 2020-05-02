@@ -15,6 +15,7 @@ typedef enum
 	TK_ELSE,	// elseトークン
 	TK_WHILE,	// whie
 	TK_FOR,		// for
+	TK_BLOCK,	// {}
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -97,6 +98,7 @@ typedef enum{
 	ND_ELSE,	// else
 	ND_WHILE,	//while
 	ND_FOR,		//for
+	ND_BLOCK,	// {...}
 	ND_LVAR,	// Local変数
 	ND_NUM,		// integer
 } Nodekind;
@@ -108,6 +110,17 @@ struct Node
 	Nodekind kind;	//ノードの種類
 	Node *lhs;	//左辺
 	Node *rhs;	//右辺
+
+	//for, if, whileの時、使う
+	Node *cond;
+	Node *then;
+	Node *els;
+	Node *inc;
+	Node *init;
+
+	// {...}の中身を格納
+	Node *body;
+
 	int val;	//ND_NUMの時のみ使う
 	int offset;	//kindがND_LVARの時にのみ使う
 };

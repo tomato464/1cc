@@ -53,17 +53,27 @@ Node *stmt()
 		return node;
 	}
 
+	else if(consume("{")){
+		node = calloc(1, sizeof(Node));
+		noe->kind = ND_BLOCK;
+		while(!consume("}")){
+			node->body = stmt();//最新のみ受け取るのでは？
+			if(at_eof()){
+				error("'}'がありません");
+			}		
+		}
+		return;
+	}
+
 	else if(consume_if()){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_IF;
 		consume("(");
-		node->lhs = expr();
+		node->cond = expr();
 		consume(")");
-		node->rhs = calloc(1, sizeof(Node));
-		node->rhs->lhs = stmt();
+		node->then = stmt();
 		if(consume_else()){
-			node->rhs->kind = ND_ELSE;
-			node->rhs->rhs = stmt();
+			node->els = stmt();
 		}
 		return node;
 	}
@@ -71,22 +81,20 @@ Node *stmt()
 	else if(consume_for()){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_FOR;
-		node->lhs = calloc(1, sizeof(Node));
-		node->rhs = calloc(1, sizeof(Node));
 		consume("(");
 		if(!is_it(";")){
-			node->lhs->lhs = expr();
+			node->init = expr();
 		}
 		consume(";");
 		if(!is_it(";")){
-			node->lhs->rhs = expr();
+			node->cond = expr();
 		}
 		consume(";");
 		if(!is_it(")")){
-			node->rhs->lhs = expr();
+			node->inc = expr();
 		}	
 		consume(")");
-		node->rhs->rhs = stmt();
+		node->then = stmt();
 		return node;
 	}
 
@@ -94,9 +102,9 @@ Node *stmt()
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_WHILE;
 		consume("(");
-		node->lhs = expr();
+		node->cond = expr();
 		consume(")");
-		node->rhs = stmt();
+		node->then = stmt();
 		return node;
 	}
 	else{
