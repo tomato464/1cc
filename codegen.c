@@ -47,6 +47,7 @@ void gen(Node *node)
 
 		case ND_IF:
 			tmp = label;
+			label++;
 			gen(node->cond);
 			printf("	pop	rax\n");
 			printf("	cmp	rax,0\n");
@@ -61,11 +62,11 @@ void gen(Node *node)
 				gen(node->then);
 			}
 			printf(".Lend%d:\n", tmp);
-			label++;
 			return;
 
 		case ND_FOR:
 			tmp = label;
+			label++;
 
 			if(node->init){
 				gen(node->init);	
@@ -90,11 +91,11 @@ void gen(Node *node)
 			
 			printf("	jmp	.Lbegin%d\n", tmp);
 			printf(".Lend%d:\n", tmp);
-			label++;
 			return;
 
 		case ND_WHILE:
 			tmp = label;
+			label++;
 			printf(".Lbegin%d:\n", tmp);
 			gen(node->cond);
 			printf("	pop	rax\n");
@@ -103,7 +104,6 @@ void gen(Node *node)
 			gen(node->then);
 			printf("	jmp	.Lbegin%d\n", tmp);
 			printf(".Lend%d:\n", tmp);
-			label++;
 			return;
 
 		case ND_RETURN:

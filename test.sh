@@ -17,6 +17,7 @@ assert(){
 	fi
 }
 
+assert 30 "x = 43; if(x == 43){ x = x + 1; if(x != 43){x = 30;return x;}else{x = 50; return x;}}"
 assert 40 "x = 10;if(x == 10){x = 20;y = 20; x = x + y;}return x;"
 assert 10 "x = 10;if(x != 10){x = 20;y = 20; x = x + y;}return x;"
 assert 0 "0;"
