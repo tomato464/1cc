@@ -39,7 +39,10 @@ void gen(Node *node)
 			return;
 
 		case ND_BLOCK:
-			gen(code->body);
+			for(Node *c = node->body; c; c = c->next){
+				gen(c);
+				printf("	pop	rax\n");
+			}
 			return;
 
 		case ND_IF:

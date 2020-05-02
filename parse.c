@@ -54,15 +54,19 @@ Node *stmt()
 	}
 
 	else if(consume("{")){
-		node = calloc(1, sizeof(Node));
-		noe->kind = ND_BLOCK;
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_BLOCK;
+		Node head = {};
+		Node *cur = &head;
 		while(!consume("}")){
-			node->body = stmt();//最新のみ受け取るのでは？
+			cur->next = stmt();
+			cur = cur->next;
 			if(at_eof()){
 				error("'}'がありません");
 			}		
 		}
-		return;
+		node->body = head.next;
+		return node;
 	}
 
 	else if(consume_if()){

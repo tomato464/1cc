@@ -110,6 +110,7 @@ struct Node
 	Nodekind kind;	//ノードの種類
 	Node *lhs;	//左辺
 	Node *rhs;	//右辺
+	Node *next;	//次のノード
 
 	//for, if, whileの時、使う
 	Node *cond;
