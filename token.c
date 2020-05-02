@@ -148,6 +148,15 @@ bool is_alnum(char c)
 	return false;
 }
 
+bool is_it(char *op)
+{
+	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
+		memcmp(token->str, op, token->len)){
+		return false;
+	}
+	return true;
+}
+
 bool startswith(char *p, char *q)
 {
 	return memcmp(p, q, strlen(q)) == 0;//p==qでtrueを返す

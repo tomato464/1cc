@@ -74,11 +74,17 @@ Node *stmt()
 		node->lhs = calloc(1, sizeof(Node));
 		node->rhs = calloc(1, sizeof(Node));
 		consume("(");
-		node->lhs->lhs = expr();
+		if(!is_it(";")){
+			node->lhs->lhs = expr();
+		}
 		consume(";");
-		node->lhs->rhs = expr();
+		if(!is_it(";")){
+			node->lhs->rhs = expr();
+		}
 		consume(";");
-		node->rhs->lhs = expr();	
+		if(!is_it(")")){
+			node->rhs->lhs = expr();
+		}	
 		consume(")");
 		node->rhs->rhs = stmt();
 		return node;

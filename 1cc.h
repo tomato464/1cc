@@ -70,9 +70,11 @@ bool at_eof();
 //新しいトークンを生成してcurに繋げる
 Token *new_token(Tokenkind kind, Token *cur, char *str, int len);
 
-bool alpha(char c);
+bool is_alpha(char c);
 
-bool alnum(char c);
+bool is_alnum(char c);
+
+bool is_it(char *op);
 
 bool startswith(char *p, char *q);
 
