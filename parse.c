@@ -52,6 +52,7 @@ Node *stmt()
 		consume(";");
 		return node;
 	}
+
 	else if(consume_if()){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_IF;
@@ -66,6 +67,23 @@ Node *stmt()
 		}
 		return node;
 	}
+
+	else if(consume_for()){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_FOR;
+		node->lhs = calloc(1, sizeof(Node));
+		node->rhs = calloc(1, sizeof(Node));
+		consume("(");
+		node->lhs->lhs = expr();
+		consume(";");
+		node->lhs->rhs = expr();
+		consume(";");
+		node->rhs->lhs = expr();	
+		consume(")");
+		node->rhs->rhs = stmt();
+		return node;
+	}
+
 	else if(consume_while()){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_WHILE;

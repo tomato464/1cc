@@ -55,5 +55,6 @@ assert 43 "x = 10; if(x == 5)x = 20; else x = 43; return x;"
 assert 20 "x = 5; if(x == 5) x = 20; else x = 43;return x;"
 assert 30 "x = 5;y = 2; if(x == 5)if(y == 2) x = 30; return x;"
 assert 10 "i = 0; while(i < 10)i = i + 1; return i;"
-
+assert 10 "x = 10;for(i = 0; i < 10; i = i + 1)x = x + 1; return i;"
+assert 20 "x = 10;for(i = 0; i < 10; i = i + 1)x = x + 1; return x;"
 echo OK
