@@ -1,4 +1,9 @@
 #include "1cc.h"
+
+//Input string
+
+char *current_input;
+
 //エラーを報告するための関数
 //printfと同じ引数を取る
 void error(char *fmt, ...)
@@ -10,113 +15,44 @@ void error(char *fmt, ...)
 	exit(1);
 }
 
-void error_at(char *loc, char *fmt, ...)
+void verror_at(char *loc, char *fmt, va_list ap)
 {
-	va_list ap;
-	va_start(ap, fmt);
-
-	int pos = loc - user_input;
-	fprintf(stderr, "%s\n", user_input);
+	int pos = loc - current_input;
+	fprintf(stderr, "%s\n", current_input);
 	fprintf(stderr, "%*s", pos, " ");
 	fprintf(stderr, "^");
-
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, "\n");
 	exit(1);
 }
 
-//次のトークンが期待している記号の時には、トークンを一つ進めて
-//真を返す。それ以外の時には偽を返す
-bool consume(char *op)
+void error_at(char *loc, char *fmt, ...)
 {
-	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
-		memcmp(token->str, op, token->len)){
-		return false;
-	}
-	token = token->next;
-	return true;
+	va_list ap;
+	va_start(ap, fmt);
+	verror_at(loc, fmt, ap);
 }
 
-bool consume_return(void)
+void error_tok(Token *tok, char *fmt, ...)
 {
-	if(token->kind != TK_RETURN){
-		return false;
-	}
-	token = token->next;
-	return true;
+	va_list ap;
+	va_start(ap, fmt);
+	verror_at(tok->loc, fmt, ap);
 }
 
-bool consume_if(void)
+//指定されたトークンと文字列opを比べる
+bool equal(Token *tok, char *op)
 {
-	if(token->kind != TK_IF){
-		return false;
-	}
-	token = token->next;
-	return true;
+	return strlen(op) == tok->len &&
+		!strncmp(tok->loc, op, tok->len);
 }
 
-bool consume_else(void)
+Token *skip(Token *tok, char *op)
 {
-	if(token->kind != TK_ELSE){
-		return false;
+	if(!equal(tok, op)){
+		error_tok(tok, "expected '%s'", op);		
 	}
-	token = token->next;
-	return true;
-}
-
-bool consume_while(void)
-{
-	if(token->kind != TK_WHILE){
-		return false;
-	}
-	token = token->next;
-	return true;
-}
-bool consume_for(void)
-{
-	if(token->kind != TK_FOR){
-		return false;
-	}
-	token = token->next;
-	return true;
-}
-//次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
-//それ以外の時はNoneを返すl 
-Token *consume_ident(void)
-{
-	if(token->kind != TK_IDENT){
-		return NULL;
-	}
-	Token *local_value = token;
-	token = token->next;
-	return local_value;
-}
-
-//次のトークンが期待している記号の時には、トークンを一つ読み進める。
-//それ以外の場合にはエラーを報告する。
-void expect(char *op)
-{
-	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
-		memcmp(token->str, op, token->len)){
-		error_at(token->str, "'%s'ではありません", op);
-	}
-	token = token->next;
-}
-
-//次のトークンが数値の場合、トークンを一つ進めてその数値を返す
-//それ以外の場合にはエラーを報告する
-int expect_number(){
-	if(token->kind != TK_NUM){
-		error_at(token->str, "数ではありません");
-	}
-	int val = token->val;
-	token = token->next;
-	return val;
-}
-
-bool at_eof()
-{
-	return token->kind == TK_EOF;
+	return tok->next;
 }
 
 //新しいトークンを生成してcurに繋げる
@@ -124,7 +60,7 @@ Token *new_token(Tokenkind kind, Token *cur, char *str, int len)
 {
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;
-	tok->str = str;
+	tok->loc = str;
 	tok->len = len;
 	cur->next = tok;
 	return tok;
@@ -151,7 +87,7 @@ bool is_alnum(char c)
 bool is_it(char *op)
 {
 	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
-		memcmp(token->str, op, token->len)){
+		memcmp(token->loc, op, token->len)){
 		return false;
 	}
 	return true;
@@ -163,11 +99,10 @@ bool startswith(char *p, char *q)
 }
 
 //入力文字列pをトークナイズしてそれを返す
-Token *tokenize()
+Token *tokenize(char *p)
 {
-	char *p = user_input;
-	Token head;
-	head.next = NULL;
+	current_input = p;
+	Token head = {};
 	Token *cur = &head;
 
 	while(*p){
@@ -250,4 +185,3 @@ Token *tokenize()
 	new_token(TK_EOF, cur, p, 0);
 	return head.next;
 }
-

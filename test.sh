@@ -1,10 +1,15 @@
 #!/bin/bash
+cat <<EOF | gcc -xc -c -o tmp2.o -
+int ret3(){ return 3;}
+int ret5(){ return 5;}
+EOF
+
 assert(){
 	expected="$1"
 	input="$2"
 
-	./1cc "$input" > tmp.s
-	cc -o tmp tmp.s
+	./1cc "$input" > tmp.s || exit
+	gcc -o tmp tmp.s tmp2.o
 	./tmp
 	actual="$?"
 
@@ -17,10 +22,7 @@ assert(){
 	fi
 }
 
-assert 30 "x = 43; if(x == 43){ x = x + 1; if(x != 43){x = 30;return x;}else{x = 50; return x;}}"
-assert 40 "x = 10;if(x == 10){x = 20;y = 20; x = x + y;}return x;"
-assert 10 "x = 10;if(x != 10){x = 20;y = 20; x = x + y;}return x;"
-assert 0 "0;"
+assert 0 "{ return 0; }"
 assert 42 "42;"
 assert 21 "5+20-4;"
 assert 21 "5 + 20 - 4;"
@@ -61,4 +63,7 @@ assert 10 "x = 10;for(i = 0; i < 10; i = i + 1)x = x + 1; return i;"
 assert 20 "x = 10;for(i = 0; i < 10; i = i + 1)x = x + 1; return x;"
 assert 10 "i = 0;for(;i < 10;i = i + 1)i = i + 1;return i;"
 assert 10 "i = 0;for(;i < 10;)i = i + 1;return i;"
+assert 30 "x = 43; if(x == 43){ x = x + 1; if(x != 43){x = 30;return x;}else{x = 50; return x;}}"
+assert 40 "x = 10;if(x == 10){x = 20;y = 20; x = x + y;}return x;"
+assert 10 "x = 10;if(x != 10){x = 20;y = 20; x = x + y;}return x;"
 echo OK
