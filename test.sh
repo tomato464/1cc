@@ -1,4 +1,5 @@
 #!/bin/bash
+
 cat <<EOF | gcc -xc -c -o tmp2.o -
 int ret3(){ return 3;}
 int ret5(){ return 5;}
@@ -9,7 +10,7 @@ assert(){
 	input="$2"
 
 	./1cc "$input" > tmp.s || exit
-	gcc -o tmp tmp.s tmp2.o
+	gcc -static -o tmp tmp.s tmp2.o
 	./tmp
 	actual="$?"
 
@@ -22,6 +23,8 @@ assert(){
 	fi
 }
 
+assert 3 "{ return ret3(); }"
+assert 5 "{ return ret5(); }"
 assert 0 "{ return 0; }"
 assert 42 "42;"
 assert 21 "5+20-4;"

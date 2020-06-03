@@ -113,6 +113,12 @@ void gen(Node *node)
 			printf("	pop	rbp\n");
 			printf("	ret\n");
 			return;
+
+		case ND_FUNCALL:
+			printf("	mov	rax, 0\n");
+			printf("	call	%s\n", node->funcname);
+			printf("	push	rax\n");
+			return;
 	}
 
 	gen(node->lhs);
