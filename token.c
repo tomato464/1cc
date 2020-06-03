@@ -37,9 +37,52 @@ bool consume(char *op)
 	return true;
 }
 
+bool consume_return(void)
+{
+	if(token->kind != TK_RETURN){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+
+bool consume_if(void)
+{
+	if(token->kind != TK_IF){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+
+bool consume_else(void)
+{
+	if(token->kind != TK_ELSE){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+
+bool consume_while(void)
+{
+	if(token->kind != TK_WHILE){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
+bool consume_for(void)
+{
+	if(token->kind != TK_FOR){
+		return false;
+	}
+	token = token->next;
+	return true;
+}
 //次のトークンがローカル変数ならば、トークンを一つ進めてその変数を返す。（ローマ字）
 //それ以外の時はNoneを返すl 
-Token *consume_ident()
+Token *consume_ident(void)
 {
 	if(token->kind != TK_IDENT){
 		return NULL;
@@ -87,6 +130,33 @@ Token *new_token(Tokenkind kind, Token *cur, char *str, int len)
 	return tok;
 }
 
+//cがa~zもしくは A~Zかどうか
+bool is_alpha(char c)
+{
+	if(('a' <= c && c <= 'z')||('A' <= c && c <= 'Z') || c == '_'){
+		return true;
+	}
+	return false;
+}
+
+//cがアルファベットか数字ならばtrueを返す
+bool is_alnum(char c)
+{
+	if(is_alpha(c) || ('0' <= c &&c <= '9')){
+		return true;
+	}
+	return false;
+}
+
+bool is_it(char *op)
+{
+	if(token->kind != TK_RESERVED || strlen(op) != token->len ||
+		memcmp(token->str, op, token->len)){
+		return false;
+	}
+	return true;
+}
+
 bool startswith(char *p, char *q)
 {
 	return memcmp(p, q, strlen(q)) == 0;//p==qでtrueを返す
@@ -107,9 +177,49 @@ Token *tokenize()
 			continue;
 		}
 
-		if('a' <= *p && *p <= 'z'){
-			cur = new_token(TK_IDENT, cur, p, 1);
+		//return文の判定
+		if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])){
+			cur = new_token(TK_RETURN, cur, p, 6);
+			p += 6;
+			continue;
+		}
+
+		//if文の判定
+		if(strncmp(p, "if", 2) == 0 && !is_alnum(p[2])){
+			cur = new_token(TK_IF, cur, p, 2);
+			p += 2;
+			continue;
+		}
+
+		//else文の判定
+		if(strncmp(p, "else", 4) == 0 && !is_alnum(p[4])){
+			cur = new_token(TK_ELSE, cur, p, 4);
+			p += 4;
+			continue;
+		}
+
+
+		//while文の判定
+		if(strncmp(p, "while", 5) == 0 && !is_alnum(p[5])){
+			cur = new_token(TK_WHILE, cur, p, 5);
+			p += 5;
+			continue;
+		}
+
+		//for文の判定
+		if(strncmp(p, "for", 3) == 0 && !is_alnum(p[3])){
+			cur = new_token(TK_FOR, cur, p, 3);
+			p += 3;
+			continue;
+		}
+		//ローカル変数
+		if(is_alpha(*p)){
+			char *q = p;
 			p++;
+			while(is_alnum(*p)){
+				p++;
+			}
+			cur = new_token(TK_IDENT, cur, q, p - q);
 			continue;
 		}
 		
@@ -121,7 +231,7 @@ Token *tokenize()
 			continue;
 		}
 
-		if(strchr("+-*/()<>", *p)){
+		if(strchr("+-*/()<>;={}", *p)){
 			cur = new_token(TK_RESERVED, cur, p, 1);
 			p++;
 			continue;
@@ -135,7 +245,7 @@ Token *tokenize()
 			continue;
 		}
 
-		error_at(p, "invalid token");
+		error_at(p, "invalid token!");
 	}
 	new_token(TK_EOF, cur, p, 0);
 	return head.next;

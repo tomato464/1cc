@@ -10,6 +10,12 @@ typedef enum
 {
 	TK_RESERVED,	//記号
 	TK_IDENT,	//変数
+	TK_RETURN,	//returnトークン
+	TK_IF,		// ifトークン
+	TK_ELSE,	// elseトークン
+	TK_WHILE,	// whie
+	TK_FOR,		// for
+	TK_BLOCK,	// {}
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -44,7 +50,17 @@ void expect(char *op);
 //真を返す。それ以外の時には偽を返す
 bool consume(char *op);
 
-Token *consume_ident();
+bool consume_return(void);
+
+bool consume_if(void);
+
+bool consume_else(void);
+
+bool consume_while(void);
+
+bool consume_for(void);
+
+Token *consume_ident(void);
 
 //次のトークンが数値の場合、トークンを一つ進めてその数値を返す
 //それ以外の場合にはエラーを報告する
@@ -54,6 +70,12 @@ bool at_eof();
 
 //新しいトークンを生成してcurに繋げる
 Token *new_token(Tokenkind kind, Token *cur, char *str, int len);
+
+bool is_alpha(char c);
+
+bool is_alnum(char c);
+
+bool is_it(char *op);
 
 bool startswith(char *p, char *q);
 
@@ -71,6 +93,12 @@ typedef enum{
 	ND_LT,		// <
 	ND_LE,		// <=
 	ND_ASSIGN,	// =
+	ND_RETURN,	// return
+	ND_IF,		//if
+	ND_ELSE,	// else
+	ND_WHILE,	//while
+	ND_FOR,		//for
+	ND_BLOCK,	// {...}
 	ND_LVAR,	// Local変数
 	ND_NUM,		// integer
 } Nodekind;
@@ -82,10 +110,37 @@ struct Node
 	Nodekind kind;	//ノードの種類
 	Node *lhs;	//左辺
 	Node *rhs;	//右辺
+	Node *next;	//次のノード
+
+	//for, if, whileの時、使う
+	Node *cond;
+	Node *then;
+	Node *els;
+	Node *inc;
+	Node *init;
+
+	// {...}の中身を格納
+	Node *body;
+
 	int val;	//ND_NUMの時のみ使う
 	int offset;	//kindがND_LVARの時にのみ使う
 };
 Node *code[100];
+
+typedef struct LVar LVar;
+
+struct LVar
+{
+	LVar *next;	//次の変数がNULL
+	char *name;	//変数の名前
+	int len;	//名前の長さ
+	int offset;	//RBPからのオフセット
+};
+
+//ローカル変数
+LVar *locals;
+
+LVar *find_lvar(Token *tok);
 
 Node *new_node(Nodekind kind);
 
@@ -107,4 +162,5 @@ Node *primary();
 
 //codegne.c
 //コードを生成
+void gen_lval(Node *node);
 void gen(Node *node);
