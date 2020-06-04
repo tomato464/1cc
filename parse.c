@@ -1,17 +1,17 @@
 #include "1cc.h"
 
-Node *compound_stmt(Token **rest, Token *tok);
-Node *stmt(Token **rest, Token *tok);
-Node *expr(Token **rest, Token *tok);
-Node *assign(Token **rest, Token *tok);
-Node *equality(Token **rest, Token *tok);
-Node *relational(Token **rest, Token *tok);
-Node *add(Token **rest, Token *tok);
-Node *mul(Token **rest, Token *tok);
-Node *unary(Token **rest, Token *tok);
-Node *primary(Token **rest, Token *tok);
+static Node *compound_stmt(Token **rest, Token *tok);
+static Node *stmt(Token **rest, Token *tok);
+static Node *expr(Token **rest, Token *tok);
+static Node *assign(Token **rest, Token *tok);
+static Node *equality(Token **rest, Token *tok);
+static Node *relational(Token **rest, Token *tok);
+static Node *add(Token **rest, Token *tok);
+static Node *mul(Token **rest, Token *tok);
+static Node *unary(Token **rest, Token *tok);
+static Node *primary(Token **rest, Token *tok);
 
-Node *new_node(Nodekind kind, Token *tok)
+static Node *new_node(Nodekind kind, Token *tok)
 {
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = kind;
@@ -19,7 +19,7 @@ Node *new_node(Nodekind kind, Token *tok)
 	return node;
 }
 
-Node *new_binary(Nodekind kind, Node *lhs, Node *rhs, Token *tok)
+static Node *new_binary(Nodekind kind, Node *lhs, Node *rhs, Token *tok)
 {
 	Node *node = new_node(kind, tok);
 	node->lhs = lhs;
@@ -27,21 +27,21 @@ Node *new_binary(Nodekind kind, Node *lhs, Node *rhs, Token *tok)
 	return node;
 }
 
-Node *new_unary(Nodekind kind, Node *expr, Token *tok)
+static Node *new_unary(Nodekind kind, Node *expr, Token *tok)
 {
 	Node *node = new_node(kind, tok);
 	node->lhs = expr;
 	return node;
 }
 
-Node *new_num(long val, Token *tok)
+static Node *new_num(long val, Token *tok)
 {
 	Node *node = new_node(ND_NUM, tok);
 	node->val = val;
 	return node;
 }
 
-char *get_ident(Token *tok)
+static char *get_ident(Token *tok)
 {
 	if(tok->kind != TK_IDENT){
 		error_tok(tok, "expected an identifier");
@@ -49,7 +49,7 @@ char *get_ident(Token *tok)
 	return strndup(tok->loc, tok->len);
 }
 
-long get_number(Token *tok)
+static long get_number(Token *tok)
 {
 	if(tok->kind != TK_NUM){
 		error_tok(tok, "expected a number");
@@ -59,7 +59,7 @@ long get_number(Token *tok)
 }
 
 //変数名を検索する。見つからなかった場合はNULLを返す。
-LVar *find_lvar(Token *tok)
+static LVar *find_lvar(Token *tok)
 {
 	for(LVar *var = locals; var; var = var->next){
 		if(var->len == tok->len && !memcmp(tok->loc, var->name, var->len)){
@@ -76,7 +76,7 @@ LVar *find_lvar(Token *tok)
 //	|"while" "(" expr  ")" stmt
 //	|"{" compuund-stmt
 //	|expr ";"
-Node *stmt(Token **rest, Token *tok)
+static Node *stmt(Token **rest, Token *tok)
 {
 	if(equal(tok, "return")){
 		Token *start = tok;
@@ -140,7 +140,7 @@ Node *stmt(Token **rest, Token *tok)
 	return node;
 }
 
-Node *compound_stmt(Token **rest, Token *tok)
+static Node *compound_stmt(Token **rest, Token *tok)
 {
 	Node head = {};
 	Node *cur = &head;
@@ -155,12 +155,12 @@ Node *compound_stmt(Token **rest, Token *tok)
 	return node;
 }
 
-Node *expr(Token **rest, Token *tok)
+static Node *expr(Token **rest, Token *tok)
 {
 	return assign(rest, tok);
 }
 
-Node *assign(Token **rest, Token *tok)
+static Node *assign(Token **rest, Token *tok)
 {
 	Node *node = equality(&tok, tok);
 
@@ -175,7 +175,7 @@ Node *assign(Token **rest, Token *tok)
 }
 
 //equality = relational ("=="relational | "!="relational)*
-Node *equality(Token **rest, Token *tok)
+static Node *equality(Token **rest, Token *tok)
 {
 	Node *node = relational(&tok, tok);
 	
@@ -199,7 +199,7 @@ Node *equality(Token **rest, Token *tok)
 }
 
 //relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-Node *relational(Token **rest, Token *tok)
+static Node *relational(Token **rest, Token *tok)
 {
 	Node *node = add(&tok, tok);
 
@@ -232,7 +232,7 @@ Node *relational(Token **rest, Token *tok)
 }
 
 // add = mul ("+" mul | "-"mul)*
-Node *add(Token **rest, Token *tok)
+static Node *add(Token **rest, Token *tok)
 {
 	Node *node = mul(&tok, tok);
 	
@@ -256,7 +256,7 @@ Node *add(Token **rest, Token *tok)
 }
 
 //mul = unary ("*"unary | "/"unary)*
-Node *mul(Token **rest, Token *tok)
+static Node *mul(Token **rest, Token *tok)
 {
 	Node *node = unary(&tok, tok);
 
@@ -281,7 +281,7 @@ Node *mul(Token **rest, Token *tok)
 }
 
 //unary = ('+' | '-')?primary
-Node *unary(Token **rest, Token *tok)
+static Node *unary(Token **rest, Token *tok)
 {
 	if(equal(tok, "+")){
 		return unary(rest, tok->next);
@@ -294,7 +294,7 @@ Node *unary(Token **rest, Token *tok)
 
 //primary = num | "("expr")"| ident args?
 // args = "(" ")"
-Node *primary(Token **rest, Token *tok)
+static Node *primary(Token **rest, Token *tok)
 {
 	if(equal(tok, "(")){
 		Node *node = expr(&tok, tok->next);

@@ -1,6 +1,6 @@
 #include "1cc.h"
 //コードを生成
-void gen_lval(Node *node)
+static void gen_lval(Node *node)
 {
 	if(node->kind != ND_LVAR){
 		error("左辺地の値が変数ではありません。");
@@ -12,7 +12,7 @@ void gen_lval(Node *node)
 	return;
 }
 
-int label = 1;
+static int label = 1;
 void gen(Node *node)
 {
 	int tmp;

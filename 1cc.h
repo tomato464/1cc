@@ -34,30 +34,14 @@ struct Token
 	int len;	//トークン文字列の長さ
 };
 
-//現在着目しているトークン
-Token *token;
 
 //エラーを報告するための関数
 //printfと同じ引数を取る
 void error(char *fmt, ...);
 void error_tok(Token *tok, char *fmt, ...);
-void error_at(char *loc, char *fmt, ...);
-
 
 bool equal(Token *tok, char *op);
-
 Token *skip(Token *tok, char *op);
-
-//新しいトークンを生成してcurに繋げる
-Token *new_token(Tokenkind kind, Token *cur, char *str, int len);
-
-bool is_alpha(char c);
-
-bool is_alnum(char c);
-
-bool is_it(char *op);
-
-bool startswith(char *p, char *q);
 
 //入力文字列pをトークナイズしてそれを返す
 Token *tokenize();
@@ -125,13 +109,10 @@ struct LVar
 //ローカル変数
 LVar *locals;
 
-LVar *find_lvar(Token *tok);
-
 //最初は+,-の処理を構文木を使って処理できるようにする
 void program(Token *tok);
 Node *parse(Token *tok);
 
 //codegne.c
 //コードを生成
-void gen_lval(Node *node);
 void gen(Node *node);
