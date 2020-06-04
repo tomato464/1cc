@@ -134,8 +134,8 @@ static Node *stmt(Token **rest, Token *tok)
 		node->then = stmt(rest, tok);
 		return node;
 	}
-	Node *node = calloc(1, sizeof(Node));
-	node  = expr(&tok, tok);
+	
+	Node *node = new_unary(ND_EXPR_STMT, expr(&tok, tok), tok);//lhsにしかついていない
 	*rest = skip(tok, ";");
 	return node;
 }
@@ -353,11 +353,3 @@ Node *parse(Token *tok)
 	return head.next;
 }
 
-void program(Token *tok){
-	int i = 0;
-	while(tok->kind != TK_EOF){
-		code[i] = stmt(&tok, tok);
-		i++;
-	}
-	code[i] = NULL;
-}

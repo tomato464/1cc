@@ -65,6 +65,7 @@ typedef enum{
 	ND_FOR,		//for
 	ND_BLOCK,	// {...}
 	ND_LVAR,	// Local変数
+	ND_EXPR_STMT,	// Expression statement
 	ND_NUM,		// integer
 } Nodekind;
 
@@ -94,7 +95,6 @@ struct Node
 	int val;	//ND_NUMの時のみ使う
 	int offset;	//kindがND_LVARの時にのみ使う
 };
-Node *code[100];
 
 typedef struct LVar LVar;
 
@@ -110,9 +110,9 @@ struct LVar
 LVar *locals;
 
 //最初は+,-の処理を構文木を使って処理できるようにする
-void program(Token *tok);
+//void program(Token *tok);
 Node *parse(Token *tok);
 
 //codegne.c
 //コードを生成
-void gen(Node *node);
+void codegen(Node *node);
