@@ -52,8 +52,21 @@ static void gen_expr(Node *node)
 				printf("	mov	%s,rax\n", argreg[nargs - i]);
 			}
 
-			printf("	mov	rax, 0\n");
+			int tmp = label;
+			label += 1;
+			//rsp（スタックポインタ）が16バイトの倍数は確認
+			printf("	mov	rax,rsp\n");
+			printf("	and	rax,15\n");
+			printf("	jnz	.Lcall%d\n", tmp);
+			printf("	mov	rax,0\n");
 			printf("	call	%s\n", node->funcname);
+			printf("	jmp	.Lend%d\n", tmp);
+			printf(".Lcall%d:\n", tmp);
+			printf("	sub	rsp,8\n");//rspは8バイトの倍数で動くから
+			printf("	mov	rax,0\n");
+			printf("	call	%s\n", node->funcname);
+			printf("	add	rsp,8\n");
+			printf(".Lend%d:\n", tmp);
 			printf("	push	rax\n");
 			return;
 		}
