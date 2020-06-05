@@ -306,9 +306,25 @@ static Node *primary(Token **rest, Token *tok)
 	if(tok->kind == TK_IDENT){
 		//function call
 		if(equal(tok->next, "(")){
-			Node *node = new_node(ND_FUNCALL, tok);
-			node->funcname = strndup(tok->loc, tok->len);
-			*rest = skip(tok->next->next, ")");
+			Token *start = tok;
+			tok = tok->next->next;
+
+			Node head = {};
+			Node *cur = &head;
+			while(!equal(tok, ")")){
+				if(cur != &head){
+					tok = skip(tok, ",");
+				}
+
+				cur->next = assign(&tok, tok);
+				cur = cur->next;
+			}
+
+			*rest = skip(tok, ")");
+
+			Node *node = new_node(ND_FUNCALL, start);
+			node->funcname = strndup(start->loc, start->len);
+			node->args = head.next;
 			return node;
 		}
 
@@ -337,6 +353,7 @@ static Node *primary(Token **rest, Token *tok)
 		*rest = tok->next;
 		return node;
 	}
+
 	Node *node = new_num(get_number(tok), tok);
 	*rest = tok->next;
 	return node;

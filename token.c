@@ -103,6 +103,15 @@ Token *tokenize(char *p)
 			continue;
 		}
 
+		if(isdigit(*p)){
+			cur = new_token(TK_NUM, cur, p, 0);//とりあえず0を入れておく
+			char *q = p;
+			cur->val = strtol(p, &p, 10);//pの値を更新
+			cur->len = p - q;
+			continue;
+		}
+
+
 		//return文の判定
 		if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])){
 			cur = new_token(TK_RETURN, cur, p, 6);
@@ -157,17 +166,9 @@ Token *tokenize(char *p)
 			continue;
 		}
 
-		if(strchr("+-*/()<>;={}", *p)){
+		if(ispunct(*p)){
 			cur = new_token(TK_RESERVED, cur, p, 1);
 			p++;
-			continue;
-		}
-
-		if(isdigit(*p)){
-			cur = new_token(TK_NUM, cur, p, 0);//とりあえず0を入れておく
-			char *q = p;
-			cur->val = strtol(p, &p, 10);//pの値を更新
-			cur->len = p - q;
 			continue;
 		}
 

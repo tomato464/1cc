@@ -91,6 +91,7 @@ struct Node
 
 	// function callの時に使う、関数名
 	char *funcname;
+	Node *args;
 
 	int val;	//ND_NUMの時のみ使う
 	int offset;	//kindがND_LVARの時にのみ使う
