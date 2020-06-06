@@ -148,7 +148,6 @@ static Node *compound_stmt(Token **rest, Token *tok)
 		cur->next = stmt(&tok, tok);
 		cur = cur->next;
 	}
-
 	Node *node = new_node(ND_BLOCK, tok);
 	node->body = head.next;
 	*rest = tok->next;
@@ -358,15 +357,12 @@ static Node *primary(Token **rest, Token *tok)
 	*rest = tok->next;
 	return node;
 }
-//program = stmt*
-Node *parse(Token *tok)
+///program = stmt*
+Function *parse(Token *tok)
 {
-	Node head = {};
-	Node *cur = &head;
-	while(tok->kind != TK_EOF){
-		cur->next = stmt(&tok, tok);
-		cur = cur->next;
-	}
-	return head.next;
-}
+	Function *prog = calloc(1, sizeof(Function));
 
+	tok = skip(tok, "{");
+	prog->node = compound_stmt(&tok, tok)->body;
+	return prog; 
+}

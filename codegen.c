@@ -222,7 +222,7 @@ static void gen_stmt(Node *node)
 	}
 }
 
-void codegen(Node *node)
+void codegen(Function *prog)
 {
 	
 	//アセンブリの前半部分を出力
@@ -236,7 +236,7 @@ void codegen(Node *node)
 	printf("	mov	rbp,rsp\n");
 	printf("	sub	rsp,208\n");//26*8
 	//先頭の式から順にコード生成
-	for(Node *n = node; n; n = n->next){
+	for(Node *n = prog->node; n; n = n->next){
 		gen_stmt(n);
 		printf("	pop	rax\n");
 	}

@@ -104,10 +104,17 @@ struct LVar
 //ローカル変数
 LVar *locals;
 
+typedef struct Function Function;
+
+struct Function
+{
+	Node *node;
+	int stacksize;
+};
+
 //最初は+,-の処理を構文木を使って処理できるようにする
-//void program(Token *tok);
-Node *parse(Token *tok);
+Function *parse(Token *tok);
 
 //codegne.c
 //コードを生成
-void codegen(Node *node);
+void codegen(Function *prog);
