@@ -27,6 +27,7 @@ assert(){
 	fi
 }
 
+assert 20 "main(){ return sub2(30, 10);  } sub2(a, b){ return a - b; }"
 assert 14 "main(){a = 4; b = 10; return a + b;}"
 assert 43 "main(){ return ret43(); } ret43(){return 43;}"
 assert 0 "main(){ return 0; }"

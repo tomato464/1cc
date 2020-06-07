@@ -109,8 +109,10 @@ struct Function
 {
 	Function *next;
 	char *name;
+	LVar *params;
 	
 	Node *node;
+	LVar *locals;
 	int stacksize;
 };
 
