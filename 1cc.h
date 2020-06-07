@@ -108,6 +108,8 @@ typedef struct Function Function;
 
 struct Function
 {
+	Function *next;
+	char *name;
 	Node *node;
 	int stacksize;
 };

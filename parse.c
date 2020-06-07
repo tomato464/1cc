@@ -69,6 +69,22 @@ static LVar *find_lvar(Token *tok)
 	return NULL;
 }
 
+static Function *funcdef(Token **rest, Token *tok)
+{
+	if(tok->kind != TK_IDENT){
+		error_tok(tok, "expected a variable name");
+	}
+
+	Function *fn = calloc(1, sizeof(Function));
+	fn->name = get_ident(tok);
+	if(equal(tok->next, "(")){
+		tok = skip(tok->next->next, ")");
+	}
+	*rest = tok;
+	tok = skip(tok, "{");
+	fn->node = compound_stmt(rest, tok)->body;
+	return fn;
+}
 
 //stmt = "return" expr ";"
 //	|"if" "(" expr ")" stmt ( "else" stmt)?
@@ -357,12 +373,14 @@ static Node *primary(Token **rest, Token *tok)
 	*rest = tok->next;
 	return node;
 }
-///program = stmt*
+///program = funcdef*
 Function *parse(Token *tok)
 {
-	Function *prog = calloc(1, sizeof(Function));
-
-	tok = skip(tok, "{");
-	prog->node = compound_stmt(&tok, tok)->body;
-	return prog; 
+	Function head = {};
+	Function *cur = &head;
+	while(tok->kind != TK_EOF){
+		cur->next = funcdef(&tok, tok);
+		cur = cur->next;
+	}
+	return head.next;
 }
