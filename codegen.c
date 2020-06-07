@@ -236,6 +236,16 @@ void codegen(Function *prog)
 		printf("	push	rbp\n");
 		printf("	mov	rbp,rsp\n");
 		printf("	sub	rsp,208\n");//26*8
+
+		//パラメータの代入
+		int i = 0;
+		for(LVar *lvar = fn->params; lvar; lvar = lvar->next){
+			i++;
+		}
+
+		for(LVar *lvar = fn->params; lvar; lvar = lvar->next){
+			printf("	mov	[rbp - %d],%s\n", lvar->offset, argreg[ --i]);
+		}
 	
 		//先頭の式から順にコード生成
 		for(Node *n = fn->node; n; n = n->next){

@@ -94,18 +94,35 @@ static LVar *new_lvar(char *name)
 
 static Function *funcdef(Token **rest, Token *tok)
 {
+	locals = NULL;
+	
 	if(tok->kind != TK_IDENT){
 		error_tok(tok, "expected a variable name");
 	}
 
 	Function *fn = calloc(1, sizeof(Function));
 	fn->name = get_ident(tok);
-	if(equal(tok->next, "(")){
-		tok = skip(tok->next->next, ")");
+
+	tok = tok->next;
+	if(equal(tok, "(")){
+		tok = tok->next;
+
+		while(!equal(tok, ")")){
+			if(locals){
+				tok = skip(tok, ",");
+			}
+
+			new_lvar(get_ident(tok));
+			tok = tok->next;
+		}
+
+		tok = skip(tok, ")");
 	}
+	fn->params = locals;
 	*rest = tok;
 	tok = skip(tok, "{");
 	fn->node = compound_stmt(rest, tok)->body;
+	fn->locals = locals;
 	return fn;
 }
 
