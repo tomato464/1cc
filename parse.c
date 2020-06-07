@@ -341,9 +341,21 @@ static Node *unary(Token **rest, Token *tok)
 	if(equal(tok, "+")){
 		return unary(rest, tok->next);
 	}
+
 	if(equal(tok, "-")){
 		return new_binary(ND_SUB, new_num(0, tok), unary(rest, tok->next), tok); 
 	}
+
+	if(equal(tok, "&")){
+		Node *lhs = unary(rest, tok->next);
+		return new_unary(ND_ADDR, lhs, tok);
+	}
+
+	if(equal(tok, "*")){
+		Node *lhs = unary(rest, tok->next);
+		return new_unary(ND_DEREF, lhs, tok);
+	}
+
 	return primary(rest, tok);
 }
 

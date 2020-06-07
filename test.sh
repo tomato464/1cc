@@ -2,7 +2,6 @@
 
 cat <<EOF | gcc -xc -c -o tmp2.o -
 int add3(int a, int b, int c){return a + b + c;}
-int add2(int a, int b){return a+b;}
 int add6(int a, int b, int c, int d, int e, int f){ return a + b + c + d + e + f; };
 int ret(int a){ return a;}
 int ret3(){ return 3;}
@@ -27,11 +26,14 @@ assert(){
 	fi
 }
 
+assert 3 "main(){ x = 3; y = &x; return *y;  }"
+assert 5  "main(){ x = 5; y = 6; z = &y + 8; return *z;  }"
+assert 43 "main(){ return add2(40, 3); } add2(a, b){ return a + b; }"
+assert 55 "main(){ return fi(9); } fi(x){ if(x <= 1){ return 1; }else{ return fi(x - 1) + fi(x - 2); }  } "
 assert 20 "main(){ return sub2(30, 10);  } sub2(a, b){ return a - b; }"
 assert 14 "main(){a = 4; b = 10; return a + b;}"
 assert 43 "main(){ return ret43(); } ret43(){return 43;}"
 assert 0 "main(){ return 0; }"
-assert 7 "main(){ return add2(3, 4); }"
 assert 6 "main(){return add3(1, 2, 3);}"
 assert 21 "main(){ return add6(1, 2, 3, 4, 5, 6); }"
 assert 3 "main(){ return ret(3); }"
