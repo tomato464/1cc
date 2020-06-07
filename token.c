@@ -89,6 +89,29 @@ static bool startswith(char *p, char *q)
 	return memcmp(p, q, strlen(q)) == 0;//p==qでtrueを返す
 }
 
+static bool is_keyword(Token *tok)
+{
+	char *key[] = {"while", "if", "for", "return", "else"};
+
+	for(int i = 0; i < sizeof(key) / sizeof(*key); i++){
+		if(equal(tok, key[i])){
+			return true;
+		}
+	}
+	return false;
+}
+
+//先頭を渡される
+static void convert_keyword(Token *tok)
+{
+	for(Token *token = tok; token->kind != TK_EOF; token = token->next){
+		if(token->kind == TK_IDENT && is_keyword(token)){
+			token->kind = TK_RESERVED;
+		}	
+	}
+	return;
+}
+
 //入力文字列pをトークナイズしてそれを返す
 Token *tokenize(char *p)
 {
@@ -103,42 +126,16 @@ Token *tokenize(char *p)
 			continue;
 		}
 
-		//return文の判定
-		if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])){
-			cur = new_token(TK_RETURN, cur, p, 6);
-			p += 6;
-			continue;
-		}
-
-		//if文の判定
-		if(strncmp(p, "if", 2) == 0 && !is_alnum(p[2])){
-			cur = new_token(TK_IF, cur, p, 2);
-			p += 2;
-			continue;
-		}
-
-		//else文の判定
-		if(strncmp(p, "else", 4) == 0 && !is_alnum(p[4])){
-			cur = new_token(TK_ELSE, cur, p, 4);
-			p += 4;
+		if(isdigit(*p)){
+			cur = new_token(TK_NUM, cur, p, 0);//とりあえず0を入れておく
+			char *q = p;
+			cur->val = strtol(p, &p, 10);//pの値を更新
+			cur->len = p - q;
 			continue;
 		}
 
 
-		//while文の判定
-		if(strncmp(p, "while", 5) == 0 && !is_alnum(p[5])){
-			cur = new_token(TK_WHILE, cur, p, 5);
-			p += 5;
-			continue;
-		}
-
-		//for文の判定
-		if(strncmp(p, "for", 3) == 0 && !is_alnum(p[3])){
-			cur = new_token(TK_FOR, cur, p, 3);
-			p += 3;
-			continue;
-		}
-		//ローカル変数
+		//ローカル変数とキーワードをどちらもTK_IDENTとして認識させる
 		if(is_alpha(*p)){
 			char *q = p;
 			p++;
@@ -157,22 +154,15 @@ Token *tokenize(char *p)
 			continue;
 		}
 
-		if(strchr("+-*/()<>;={}", *p)){
+		if(ispunct(*p)){
 			cur = new_token(TK_RESERVED, cur, p, 1);
 			p++;
-			continue;
-		}
-
-		if(isdigit(*p)){
-			cur = new_token(TK_NUM, cur, p, 0);//とりあえず0を入れておく
-			char *q = p;
-			cur->val = strtol(p, &p, 10);//pの値を更新
-			cur->len = p - q;
 			continue;
 		}
 
 		error_at(p, "invalid token!");
 	}
 	new_token(TK_EOF, cur, p, 0);
+	convert_keyword(head.next);//ここでキーワードを確認して変換させる
 	return head.next;
 }

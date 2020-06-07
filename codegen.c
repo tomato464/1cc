@@ -1,6 +1,7 @@
 #include "1cc.h"
 
 static int label = 1;
+static char *argreg[] = {"rdi","rsi","rdx","rcx","r8","r9"};
 
 //コードを生成
 static void gen_lval(Node *node)
@@ -39,11 +40,36 @@ static void gen_expr(Node *node)
 			printf("	push	rdi\n");
 			return;
 
-		case ND_FUNCALL:
-			printf("	mov	rax, 0\n");
+		case ND_FUNCALL:{
+			int nargs = 0;
+			for(Node *arg = node->args; arg; arg = arg->next){
+				gen_expr(arg);
+				nargs++;
+			}
+
+			for(int i = 1; i <= nargs; i++){
+				printf("	pop	rax\n");
+				printf("	mov	%s,rax\n", argreg[nargs - i]);
+			}
+
+			int tmp = label;
+			label += 1;
+			//rsp（スタックポインタ）が16バイトの倍数は確認
+			printf("	mov	rax,rsp\n");
+			printf("	and	rax,15\n");
+			printf("	jnz	.Lcall%d\n", tmp);
+			printf("	mov	rax,0\n");
 			printf("	call	%s\n", node->funcname);
+			printf("	jmp	.Lend%d\n", tmp);
+			printf(".Lcall%d:\n", tmp);
+			printf("	sub	rsp,8\n");//rspは8バイトの倍数で動くから
+			printf("	mov	rax,0\n");
+			printf("	call	%s\n", node->funcname);
+			printf("	add	rsp,8\n");
+			printf(".Lend%d:\n", tmp);
 			printf("	push	rax\n");
 			return;
+		}
 	}
 
 	gen_expr(node->lhs);

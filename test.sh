@@ -1,6 +1,10 @@
 #!/bin/bash
 
 cat <<EOF | gcc -xc -c -o tmp2.o -
+int add3(int a, int b, int c){return a + b + c;}
+int add2(int a, int b){return a+b;}
+int add6(int a, int b, int c, int d, int e, int f){ return a + b + c + d + e + f; };
+int ret(int a){ return a;}
 int ret3(){ return 3;}
 int ret5(){ return 5;}
 EOF
@@ -23,6 +27,10 @@ assert(){
 	fi
 }
 
+assert 7 "{ return add2(3, 4); }"
+assert 6 "return add3(1, 2, 3);"
+assert 21 "{ return add6(1, 2, 3, 4, 5, 6); }"
+assert 3 "{ return ret(3); }"
 assert 10 "x = 10;for(i = 0; i < 10; i = i + 1)x = x + 1; return i;"
 assert 42 "{return 42; }"
 assert 0 "{ return 0; }"
