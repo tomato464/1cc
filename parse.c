@@ -1,5 +1,7 @@
 #include "1cc.h"
 
+LVar *locals;
+
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
@@ -61,14 +63,51 @@ static long get_number(Token *tok)
 //変数名を検索する。見つからなかった場合はNULLを返す。
 static LVar *find_lvar(Token *tok)
 {
-	for(LVar *var = locals; var; var = var->next){
-		if(var->len == tok->len && !memcmp(tok->loc, var->name, var->len)){
-			return var;
+	for(LVar *lvar = locals; lvar; lvar = lvar->next){
+		if(strlen(lvar->name) == tok->len && !strncmp(tok->loc, lvar->name, tok->len)){
+			return lvar;
 		}
 	}
 	return NULL;
 }
 
+static Node *new_lvar_node(LVar *lvar, Token *tok)
+{
+	Node *node = new_node(ND_LVAR, tok);
+	node->lvar = lvar;
+	return node;
+}
+
+static LVar *new_lvar(char *name)
+{
+	LVar *lvar = calloc(1, sizeof(LVar));
+	lvar->name = name;
+	if(!locals){
+		lvar->offset = 8;	
+	}else{
+		lvar->offset = locals->offset + 8;
+	}
+	lvar->next = locals;
+	locals = lvar;
+	return lvar;
+}
+
+static Function *funcdef(Token **rest, Token *tok)
+{
+	if(tok->kind != TK_IDENT){
+		error_tok(tok, "expected a variable name");
+	}
+
+	Function *fn = calloc(1, sizeof(Function));
+	fn->name = get_ident(tok);
+	if(equal(tok->next, "(")){
+		tok = skip(tok->next->next, ")");
+	}
+	*rest = tok;
+	tok = skip(tok, "{");
+	fn->node = compound_stmt(rest, tok)->body;
+	return fn;
+}
 
 //stmt = "return" expr ";"
 //	|"if" "(" expr ")" stmt ( "else" stmt)?
@@ -148,7 +187,6 @@ static Node *compound_stmt(Token **rest, Token *tok)
 		cur->next = stmt(&tok, tok);
 		cur = cur->next;
 	}
-
 	Node *node = new_node(ND_BLOCK, tok);
 	node->body = head.next;
 	*rest = tok->next;
@@ -330,43 +368,26 @@ static Node *primary(Token **rest, Token *tok)
 
 		//variable
 
-		Node *node = calloc(1, sizeof(Node));
-		node->kind = ND_LVAR;
-
 		LVar *lvar = find_lvar(tok);
-		if(lvar){
-			node->offset = lvar->offset;	
-		}
-		else{
-			lvar = calloc(1, sizeof(LVar));
-			lvar->next = locals;
-			lvar->name = tok->loc;
-			lvar->len = tok->len;
-			if(locals == NULL){
-				lvar->offset = 8;
-			}else{
-				lvar->offset = locals->offset + 8;
-			}
-			node->offset = lvar->offset;
-			locals = lvar;
+		if(!lvar){//無かったら
+			lvar = new_lvar(strndup(tok->loc, tok->len));
 		}
 		*rest = tok->next;
-		return node;
+		return new_lvar_node(lvar, tok);
 	}
 
 	Node *node = new_num(get_number(tok), tok);
 	*rest = tok->next;
 	return node;
 }
-//program = stmt*
-Node *parse(Token *tok)
+///program = funcdef*
+Function *parse(Token *tok)
 {
-	Node head = {};
-	Node *cur = &head;
+	Function head = {};
+	Function *cur = &head;
 	while(tok->kind != TK_EOF){
-		cur->next = stmt(&tok, tok);
+		cur->next = funcdef(&tok, tok);
 		cur = cur->next;
 	}
 	return head.next;
 }
-

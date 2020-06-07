@@ -65,6 +65,16 @@ typedef enum{
 
 typedef struct Node Node;
 
+typedef struct LVar LVar;
+
+struct LVar
+{
+	LVar *next;	//次の変数がNULL
+	char *name;	//変数の名前
+	int offset;	//RBPからのオフセット
+};
+
+
 struct Node
 {
 	Nodekind kind;	//ノードの種類
@@ -87,27 +97,26 @@ struct Node
 	char *funcname;
 	Node *args;
 
-	int val;	//ND_NUMの時のみ使う
-	int offset;	//kindがND_LVARの時にのみ使う
+	
+	long val;	//ND_NUMの時のみ使う
+
+	LVar *lvar;	// lond == ND_LVARの時に使う
 };
 
-typedef struct LVar LVar;
+typedef struct Function Function;
 
-struct LVar
+struct Function
 {
-	LVar *next;	//次の変数がNULL
-	char *name;	//変数の名前
-	int len;	//名前の長さ
-	int offset;	//RBPからのオフセット
+	Function *next;
+	char *name;
+	
+	Node *node;
+	int stacksize;
 };
-
-//ローカル変数
-LVar *locals;
 
 //最初は+,-の処理を構文木を使って処理できるようにする
-//void program(Token *tok);
-Node *parse(Token *tok);
+Function *parse(Token *tok);
 
 //codegne.c
 //コードを生成
-void codegen(Node *node);
+void codegen(Function *prog);

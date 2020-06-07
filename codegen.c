@@ -2,6 +2,7 @@
 
 static int label = 1;
 static char *argreg[] = {"rdi","rsi","rdx","rcx","r8","r9"};
+static Function *current_fn;
 
 //コードを生成
 static void gen_lval(Node *node)
@@ -11,7 +12,7 @@ static void gen_lval(Node *node)
 	}
 
 	printf("	mov	rax,rbp\n");
-	printf("	sub	rax,%d\n", node->offset);
+	printf("	sub	rax,%d\n", node->lvar->offset);
 	printf("	push	rax\n");
 	return;
 }
@@ -20,7 +21,7 @@ static void gen_expr(Node *node)
 {
 	switch (node->kind){
 		case ND_NUM:
-			printf("	push	%d\n", node->val);
+			printf("	push	%ld\n", node->val);
 			return;
 
 		case ND_LVAR:
@@ -204,9 +205,7 @@ static void gen_stmt(Node *node)
 		case ND_RETURN:{
 			gen_expr(node->lhs);
 			printf("	pop	rax\n");
-			printf("	mov	rsp,rbp\n");
-			printf("	pop	rbp\n");
-			printf("	ret\n");
+			printf("	jmp	.Lreturn.%s\n", current_fn->name);
 			return;
 		}
 
@@ -222,30 +221,35 @@ static void gen_stmt(Node *node)
 	}
 }
 
-void codegen(Node *node)
+void codegen(Function *prog)
 {
 	
 	//アセンブリの前半部分を出力
 	printf(".intel_syntax noprefix\n");
-	printf(".global main\n");
-	printf("main:\n");
+	for(Function *fn = prog; fn; fn = fn->next){
+		printf(".global %s\n", fn->name);
+		printf("%s:\n", fn->name);
+		current_fn = fn;
 
-	//プロローグ
-	//変数26個分の領域を確保する
-	printf("	push	rbp\n");
-	printf("	mov	rbp,rsp\n");
-	printf("	sub	rsp,208\n");//26*8
-	//先頭の式から順にコード生成
-	for(Node *n = node; n; n = n->next){
-		gen_stmt(n);
-		printf("	pop	rax\n");
+		//プロローグ
+		//変数26個分の領域を確保する
+		printf("	push	rbp\n");
+		printf("	mov	rbp,rsp\n");
+		printf("	sub	rsp,208\n");//26*8
+	
+		//先頭の式から順にコード生成
+		for(Node *n = fn->node; n; n = n->next){
+			gen_stmt(n);
+			printf("	pop	rax\n");
+		}
+		//エピローグ
+		//最後の式の結果がRAXに残っているのでそれが返り値になる。
+		printf(".Lreturn.%s:\n", fn->name);
+		printf("	mov	rsp,rbp\n");
+		printf("	pop	rbp\n");
+		printf("	ret\n");
 	}
-
-	//エピローグ
-	//最後の式の結果がRAXに残っているのでそれが返り値になる。
-	printf("	mov	rsp,rbp\n");
-	printf("	pop	rbp\n");
-	printf("	ret\n");
+	return;
 }
 
 
