@@ -12,7 +12,7 @@ static void gen_lval(Node *node)
 	}
 
 	printf("	mov	rax,rbp\n");
-	printf("	sub	rax,%d\n", node->offset);
+	printf("	sub	rax,%d\n", node->lvar->offset);
 	printf("	push	rax\n");
 	return;
 }
@@ -21,7 +21,7 @@ static void gen_expr(Node *node)
 {
 	switch (node->kind){
 		case ND_NUM:
-			printf("	push	%d\n", node->val);
+			printf("	push	%ld\n", node->val);
 			return;
 
 		case ND_LVAR:

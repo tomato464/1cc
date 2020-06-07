@@ -27,6 +27,8 @@ assert(){
 	fi
 }
 
+assert 14 "main(){a = 4; b = 10; return a + b;}"
+assert 43 "main(){ return ret43(); } ret43(){return 43;}"
 assert 0 "main(){ return 0; }"
 assert 7 "main(){ return add2(3, 4); }"
 assert 6 "main(){return add3(1, 2, 3);}"
@@ -59,7 +61,6 @@ assert 1 "main(){return 43 <= 53;}"
 assert 1 "main(){return 42 <= 42;}"
 assert 0 "main(){return 53 <= 21;}"
 assert 50 "main(){b = 50; return b;}" 
-assert 14 "main(){a = 4; b = 10; return a + b;}"
 assert 14 "main(){foo = 4; two = 10; return foo + two;}"
 assert 43 "main(){x = 11; y = 32; return x + y;}"
 assert 42 "main(){x = 32; return 42; return 30;}"
