@@ -91,7 +91,7 @@ static bool startswith(char *p, char *q)
 
 static bool is_keyword(Token *tok)
 {
-	char *key[] = {"while", "if", "for", "return", "else"};
+	char *key[] = {"while", "if", "for", "return", "else", "int"};
 
 	for(int i = 0; i < sizeof(key) / sizeof(*key); i++){
 		if(equal(tok, key[i])){

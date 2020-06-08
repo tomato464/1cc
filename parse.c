@@ -2,6 +2,7 @@
 
 LVar *locals;
 
+static void typespec(Token **rest, Token *tok);
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
@@ -12,6 +13,7 @@ static Node *add(Token **rest, Token *tok);
 static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
+
 
 static Node *new_node(Nodekind kind, Token *tok)
 {
@@ -92,12 +94,42 @@ static LVar *new_lvar(char *name)
 	return lvar;
 }
 
+static void declaration(Token **rest, Token *tok)
+{
+	typespec(&tok, tok);
+	int cnt = 0;
+
+	while(!equal(tok, ";")){
+		if(cnt++ > 0){
+			tok = skip(tok, ",");
+		}
+
+		if(tok->kind != TK_IDENT){
+			error("expected variable identifir");
+		}
+
+		LVar *lvar = new_lvar(get_ident(tok));
+		tok = tok->next;
+	}
+
+	*rest = tok->next;
+	return;
+}
+
+//　typespec = "int"
+static void typespec(Token **rest, Token *tok)
+{
+	*rest = skip(tok, "int");
+	return;
+}
+
 static Function *funcdef(Token **rest, Token *tok)
 {
 	locals = NULL;
-	
+	typespec(&tok, tok);
+
 	if(tok->kind != TK_IDENT){
-		error_tok(tok, "expected a variable name");
+		error_tok(tok, "expected a function name");
 	}
 
 	Function *fn = calloc(1, sizeof(Function));
@@ -111,6 +143,7 @@ static Function *funcdef(Token **rest, Token *tok)
 			if(locals){
 				tok = skip(tok, ",");
 			}
+			typespec(&tok, tok);
 
 			new_lvar(get_ident(tok));
 			tok = tok->next;
@@ -198,13 +231,18 @@ static Node *stmt(Token **rest, Token *tok)
 
 static Node *compound_stmt(Token **rest, Token *tok)
 {
+	Node *node = new_node(ND_BLOCK, tok);
+
 	Node head = {};
 	Node *cur = &head;
 	while(!equal(tok, "}")){
-		cur->next = stmt(&tok, tok);
-		cur = cur->next;
+		if(equal(tok, "int")){
+			declaration(&tok, tok);
+		}else{
+			cur->next = stmt(&tok, tok);
+			cur = cur->next;
+		}
 	}
-	Node *node = new_node(ND_BLOCK, tok);
 	node->body = head.next;
 	*rest = tok->next;
 	return node;
@@ -399,7 +437,7 @@ static Node *primary(Token **rest, Token *tok)
 
 		LVar *lvar = find_lvar(tok);
 		if(!lvar){//無かったら
-			lvar = new_lvar(strndup(tok->loc, tok->len));
+			error_tok(tok, "undefined variable");
 		}
 		*rest = tok->next;
 		return new_lvar_node(lvar, tok);
