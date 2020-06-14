@@ -372,6 +372,62 @@ static Node *relational(Token **rest, Token *tok)
 	}
 }
 
+// Cでは、＋はポインター型に対してうまく機能しない
+// もし、pがポインターならp+nは n を追加するのではなく sizeof(*p)*n をp	の値に加算することになる
+// 従って、p+n　n個の要素分先の番地を指すことになる
+// 言い換えれば、加算をする前に整数値をスケーリングする必要がある。
+// この関数はそれを解決している
+static Node *new_add(Node *lhs, Node *rhs, Token *tok)
+{
+	add_type(lhs);
+	add_type(rhs);
+	
+	// num + num
+	if(is_integer(lhs->ty) && is_integer(rhs->ty)){
+		return new_binary(ND_ADD, lhs, rhs, tok);
+	}
+
+	if(lhs->ty->base && rhs->ty->base){
+		error_tok(tok, "invalid operands");
+	}
+
+	//Canonicalize num + ptr to ptr + num
+	if(!lhs->ty->base && rhs->ty->base){
+		Node *tmp = lhs;
+		lhs = rhs;
+		rhs = tmp;
+	}
+
+	// ptr + num
+	rhs = new_binary(ND_MUL, rhs, new_num(8, tok), tok);
+	return new_binary(ND_ADD, lhs, rhs, tok);
+}
+
+static Node *new_sub(Node *lhs, Node *rhs, Token *tok)
+{
+	add_type(lhs);
+	add_type(rhs);
+
+	//num - num
+	if(is_integer(lhs->ty) && is_integer(rhs->ty)){
+		return new_binary(ND_SUB, lhs, rhs, tok);
+	}
+
+	//ptr - num
+	if(lhs->ty->base && is_integer(rhs->ty)){
+		rhs = new_binary(ND_MUL, rhs, new_num(8, tok), tok);
+		return new_binary(ND_SUB, lhs, rhs, tok);
+	}
+
+	// ptr - ptr, この二つの間にいくつの要素があるのかを返す
+	if(lhs->ty->base && rhs->ty->base){
+		Node *node = new_binary(ND_SUB, lhs, rhs, tok);
+		return new_binary(ND_DIV, node, new_num(8, tok), tok);
+	}
+
+	error_tok(tok, "invalid operands");
+}
+
 // add = mul ("+" mul | "-"mul)*
 static Node *add(Token **rest, Token *tok)
 {
@@ -382,13 +438,13 @@ static Node *add(Token **rest, Token *tok)
 
 		if(equal(tok, "+")){
 			Node *rhs = mul(&tok, tok->next);
-			node = new_binary(ND_ADD, node, rhs, start);
+			node = new_add(node, rhs, start);
 			continue;
 		}
 
 		if(equal(tok, "-")){
 			Node *rhs = mul(&tok, tok->next);
-			node = new_binary(ND_SUB, node, rhs, start);
+			node = new_sub(node, rhs, start);
 			continue;
 		}
 		*rest = tok;

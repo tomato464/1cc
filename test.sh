@@ -26,8 +26,13 @@ assert(){
 	fi
 }
 
-assert 3 "int main(){ int x; x = 3; int y; y = &x; return *y;  }"
-assert 5  "int main(){int x; x = 5;int y; y = 6;int z; z = &y + 8; return *z;  }"
+assert 7 "int main(){ int x = 3; int y = 5; *(&x - 1) = 7; return y;}"
+assert 3 "int main(){ int x = 3; return *&x; }"
+assert 3 "int main(){ int x = 3; int *y = &x; int **z = &y; return **z; }"
+assert 5 "int main(){ int x = 3; int y = 5; return *(&x - 1);}"
+assert 8 " int main(){ int x, y; x = 3; y = 5; return x + y;}"
+assert 8 "int main(){ int x = 3, y = 5; return x + y;}"
+assert 5 "int main(){ int x; int *y; y = &x; *y = 5; return x;}"
 assert 43 "int main(){ return add2(40, 3); } int add2(int a, int b){ return a + b; }"
 assert 55 "int main(){ return fi(9); } int fi(int x){ if(x <= 1){ return 1; }else{ return fi(x - 1) + fi(x - 2); }  } "
 assert 20 "int main(){ return sub2(30, 10);  } int sub2(int a, int b){ return a - b; }"

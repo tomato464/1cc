@@ -1,6 +1,6 @@
 #include "1cc.h"
 
-Type *ty_int = &(Type){ TY_INT };
+Type *ty_int = &(Type){TY_INT};
 
 bool is_integer(Type *ty)
 {
@@ -48,6 +48,10 @@ void add_type(Node *node)
 		add_type(n);
 	}
 
+	for(Node *n = node->args; n; n = n->next){
+		add_type(n);
+	}
+
 	switch(node->kind){
 		case ND_ADD:
 		case ND_SUB:
@@ -62,6 +66,7 @@ void add_type(Node *node)
 		case ND_LT:
 		case ND_LE:
 		case ND_NUM:
+		case ND_FUNCALL:
 			node->ty = ty_int;
 			return;
 	
