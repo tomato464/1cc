@@ -9,7 +9,6 @@ int main(int argc, char **argv)
 {
 	if(argc != 2){
 		error("%s: 引数が正しくありません。\n", argv[0]);
-		return 1;
 	}
 	
 	//トークナイズする
@@ -26,8 +25,6 @@ int main(int argc, char **argv)
 		fn->stack_size = align_to(offset, 16);
 		
 	}
-
 	codegen(prog);
-
 	return 0;
 }

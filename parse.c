@@ -8,6 +8,7 @@ static Node *declaration(Token **rest, Token *tok);
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
+static Node *expr_stmt(Token **rest, Token *tok);
 static Node *assign(Token **rest, Token *tok);
 static Node *equality(Token **rest, Token *tok);
 static Node *relational(Token **rest, Token *tok);
@@ -238,7 +239,7 @@ static Node *stmt(Token **rest, Token *tok)
 		tok = skip(tok->next, "(");
 
 		if(!equal(tok, ";")){
-			node->init = expr(&tok, tok);
+			node->init = expr_stmt(&tok, tok);
 		}
 		tok = skip(tok, ";");
 
@@ -248,7 +249,7 @@ static Node *stmt(Token **rest, Token *tok)
 		tok = skip(tok, ";");
 
 		if(!equal(tok, ")")){
-			node->inc = expr(&tok, tok);
+			node->inc = expr_stmt(&tok, tok);
 		}
 		tok = skip(tok, ")");
 
@@ -288,6 +289,13 @@ static Node *compound_stmt(Token **rest, Token *tok)
 	}
 	node->body = head.next;
 	*rest = tok->next;
+	return node;
+}
+
+static Node *expr_stmt(Token **rest, Token *tok)
+{
+	Node *node = new_node(ND_EXPR_STMT, tok);
+	node->lhs = expr(rest, tok);
 	return node;
 }
 

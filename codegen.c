@@ -1,8 +1,18 @@
 #include "1cc.h"
 
+static int top;
 static int label = 1;
 static char *argreg[] = {"rdi","rsi","rdx","rcx","r8","r9"};
 static Function *current_fn;
+
+static char *reg(int idx)
+{
+	static char *r[] = {"r10", "r11", "r12", "r13", "r14", "r15"};
+	if(idx < 0 || sizeof(r) / sizeof(*r) <= idx){
+		error("register out of range: %d", idx);
+	}
+	return r[idx];
+}
 
 static void gen_expr(Node *node);
 
@@ -11,9 +21,7 @@ static void gen_addr(Node *node)
 {
 	switch(node->kind){
 		case ND_LVAR:
-			printf("	mov	rax,rbp\n");
-			printf("	sub	rax,%d\n", node->lvar->offset);
-			printf("	push	rax\n");//スタックの一番上はローカル変数の番地
+			printf("	lea	%s,[rbp - %d]\n",reg(top++), node->lvar->offset);
 			return;
 
 		case ND_DEREF:
@@ -21,21 +29,29 @@ static void gen_addr(Node *node)
 			return;
 	}
 	error_tok(node->tok, "not an lvalue");
-	return;
+}
+
+static void load(void)
+{
+	printf("	mov	%s,[%s]\n", reg(top - 1), reg(top - 1));
+}
+
+static void store(void)
+{
+	printf("	mov	[%s], %s\n", reg(top - 1), reg(top - 2));
+	top--;
 }
 
 static void gen_expr(Node *node)
 {
 	switch (node->kind){
 		case ND_NUM:
-			printf("	push	%ld\n", node->val);
+			printf("	mov	%s,%lu\n", reg(top++), node->val);
 			return;
 
 		case ND_LVAR:
 			gen_addr(node);
-			printf("	pop	rax\n");
-			printf("	mov	rax,[rax]\n");
-			printf("	push	rax\n");
+			load();
 			return;
 
 		case ND_ADDR:
@@ -44,19 +60,13 @@ static void gen_expr(Node *node)
 
 		case ND_DEREF:
 			gen_expr(node->lhs);
-			printf("	pop	rax\n");
-			printf("	mov	rax,[rax]\n");
-			printf("	push	rax\n");
+			load();
 			return;
 
 		case ND_ASSIGN:
-			gen_addr(node->lhs);
 			gen_expr(node->rhs);
-
-			printf("	pop	rdi\n");
-			printf("	pop	rax\n");
-			printf("	mov	[rax],rdi\n");
-			printf("	push	rdi\n");
+			gen_addr(node->lhs);
+			store();
 			return;
 
 		case ND_FUNCALL:{
@@ -67,82 +77,76 @@ static void gen_expr(Node *node)
 			}
 
 			for(int i = 1; i <= nargs; i++){
-				printf("	pop	rax\n");
-				printf("	mov	%s,rax\n", argreg[nargs - i]);
+				printf("	mov	%s,%s\n", argreg[nargs - i], reg(--top));
 			}
 
-			int tmp = label;
-			label += 1;
-			//rsp（スタックポインタ）が16バイトの倍数は確認
-			printf("	mov	rax,rsp\n");
-			printf("	and	rax,15\n");
-			printf("	jnz	.Lcall%d\n", tmp);
-			printf("	mov	rax,0\n");
+			printf("	push	r10\n");
+			printf("	push	r11\n");
+			printf("	mov	rax, 0\n");
 			printf("	call	%s\n", node->funcname);
-			printf("	jmp	.Lend%d\n", tmp);
-			printf(".Lcall%d:\n", tmp);
-			printf("	sub	rsp,8\n");//rspは8バイトの倍数で動くから
-			printf("	mov	rax,0\n");
-			printf("	call	%s\n", node->funcname);
-			printf("	add	rsp,8\n");
-			printf(".Lend%d:\n", tmp);
-			printf("	push	rax\n");
+			printf("	pop	r11\n");
+			printf("	pop	r10\n");
+			printf("	mov	%s,rax\n", reg(top++));
 			return;
+
 		}
 	}
 
 	gen_expr(node->lhs);
 	gen_expr(node->rhs);
-	printf("	pop	rdi\n");
-	printf("	pop	rax\n");
+	
+
+	char *rd = reg(top - 2);
+	char *rs = reg(top - 1);
+	top--;
 
 	switch(node->kind){
 		case ND_ADD:
-			printf("	add	rax,rdi\n");
+			printf("	add	%s,%s\n", rd, rs);
 			break;
 
 		case ND_SUB:
-			printf("	sub	rax,rdi\n");
+			printf("	sub	%s,%s\n", rd, rs);
 			break;
 
 		case ND_MUL:
-			printf("	imul	rax,rdi\n");
+			printf("	imul	%s,%s\n", rd, rs);
 			break;
 
 		case ND_DIV:
+			printf("	mov rax,%s\n", rd);
 			printf("	cqo\n");
-			printf("	idiv	rdi\n");
+			printf("	idiv	%s\n", rs);
+			printf("	mov	%s,rax\n", rd);
 			break;
 
 		case ND_EQ:
-			printf("	cmp	rax,rdi\n");
+			printf("	cmp	%s,%s\n", rd, rs);
 			printf("	sete	al\n");
-			printf("	movzb	rax,al\n");
+			printf("	movzb	%s,al\n", rd);
 			break;
 
 		case ND_NE:
-			printf("	cmp	rax,rdi\n");
+			printf("	cmp	%s,%s\n", rd, rs);
 			printf("	setne	al\n");
-			printf("	movzb	rax,al\n");
+			printf("	movzb	%s,al\n", rd);
 			break;
 
 		case ND_LT:
-			printf("	cmp	rax,rdi\n");
+			printf("	cmp	%s,%s\n", rd, rs);
 			printf("	setl	al\n");
-			printf("	movzb	rax,al\n");
+			printf("	movzb	%s,al\n", rd);
 			break;
 
 		case ND_LE:
-			printf("	cmp	rax,rdi\n");
+			printf("	cmp	%s,%s\n", rd, rs);
 			printf("	setle	al\n");
-			printf("	movzb	rax,al\n");
+			printf("	movzb	%s,al\n", rd);
 			break;
 
 		default:
-			error("invalid expression");
+			error_tok(node->tok, "invalid expression");
 	}
-	printf("	push	rax\n");
-	return;
 
 }
 
@@ -152,7 +156,6 @@ static void gen_stmt(Node *node)
 		case ND_BLOCK:{
 			for(Node *c = node->body; c; c = c->next){
 				gen_stmt(c);
-				printf("	pop	rax\n");
 			}
 			return;
 		}
@@ -160,20 +163,22 @@ static void gen_stmt(Node *node)
 		case ND_IF:{
 			int tmp = label++;
 			label++;
-			gen_expr(node->cond);
-			printf("	pop	rax\n");
-			printf("	cmp	rax,0\n");
 			if(node->els){
+				gen_expr(node->cond);
+		   		printf("	cmp	%s,0\n", reg(--top));
 				printf("je	.Lelse%d\n",tmp);
 				gen_stmt(node->then);
 				printf("jmp	.Lend%d\n", tmp);
 				printf(".Lelse%d:\n", tmp);
 				gen_stmt(node->els);
+				printf(".Lend%d:\n", tmp);
 			}else{
+				gen_expr(node->cond);
+				printf("	cmp	%s,0\n", reg(--top));
 				printf("	je	.Lend%d\n", tmp);
 				gen_stmt(node->then);
+				printf(".Lend%d:\n", tmp);
 			}
-			printf(".Lend%d:\n", tmp);
 			return;
 		}
 
@@ -182,23 +187,20 @@ static void gen_stmt(Node *node)
 			label++;
 
 			if(node->init){
-				gen_expr(node->init);	
+				gen_stmt(node->init);	
 			}
 			
 			printf(".Lbegin%d:\n", tmp);
 			if(node->cond){
 				gen_expr(node->cond);
-				printf("	pop	rax\n");
-				printf("	cmp	rax,0\n");
+				printf("	cmp	%s,0\n", reg(--top));
 				printf("	je	.Lend%d\n", tmp);
 			}
 
-			if(node->then){
-				gen_stmt(node->then);
-			}
+			gen_stmt(node->then);
 
 			if(node->inc){
-				gen_expr(node->inc);
+				gen_stmt(node->inc);
 			}
 			
 			printf("	jmp	.Lbegin%d\n", tmp);
@@ -211,8 +213,7 @@ static void gen_stmt(Node *node)
 			label++;
 			printf(".Lbegin%d:\n", tmp);
 			gen_expr(node->cond);
-			printf("	pop	rax\n");
-			printf("	cmp	rax,0\n");
+			printf("	cmp	%s,0\n", reg(--top));
 			printf("	je	.Lend%d\n", tmp);
 			gen_stmt(node->then);
 			printf("	jmp	.Lbegin%d\n", tmp);
@@ -222,19 +223,19 @@ static void gen_stmt(Node *node)
 
 		case ND_RETURN:{
 			gen_expr(node->lhs);
-			printf("	pop	rax\n");
+			printf("	mov	rax,%s\n", reg(--top));
 			printf("	jmp	.Lreturn.%s\n", current_fn->name);
 			return;
 		}
 
 		case ND_EXPR_STMT:{
 			gen_expr(node->lhs);
-			printf("	pop	rax\n");
+			top--;
 			return;
 		}
 
 		default:{
-			error("invalid statement");
+			error_tok(node->tok, "invalid statement");
 		}
 	}
 }
@@ -244,6 +245,7 @@ void codegen(Function *prog)
 	
 	//アセンブリの前半部分を出力
 	printf(".intel_syntax noprefix\n");
+
 	for(Function *fn = prog; fn; fn = fn->next){
 		printf(".global %s\n", fn->name);
 		printf("%s:\n", fn->name);
@@ -253,7 +255,11 @@ void codegen(Function *prog)
 		//変数26個分の領域を確保する
 		printf("	push	rbp\n");
 		printf("	mov	rbp,rsp\n");
-		printf("	sub	rsp,208\n");//26*8
+		printf("	sub	rsp,%d\n", fn->stack_size);
+		printf("	mov	[rbp-8], r12\n");
+		printf("	mov	[rbp-16], r13\n");
+		printf("	mov	[rbp-24], r14\n");
+		printf("	mov	[rbp-32], r15\n");
 
 		//パラメータの代入
 		int i = 0;
@@ -264,15 +270,20 @@ void codegen(Function *prog)
 		for(LVar *lvar = fn->params; lvar; lvar = lvar->next){
 			printf("	mov	[rbp - %d],%s\n", lvar->offset, argreg[ --i]);
 		}
-	
+
 		//先頭の式から順にコード生成
 		for(Node *n = fn->node; n; n = n->next){
 			gen_stmt(n);
-			printf("	pop	rax\n");
+			assert( top == 0 );
 		}
+
 		//エピローグ
 		//最後の式の結果がRAXに残っているのでそれが返り値になる。
 		printf(".Lreturn.%s:\n", fn->name);
+		printf("	mov	r12,[rbp-8]\n");
+		printf("	mov	r13,[rbp-16]\n");
+		printf("	mov	r14,[rbp-24]\n");
+		printf("	mov	r15,[rbp-32]\n");
 		printf("	mov	rsp,rbp\n");
 		printf("	pop	rbp\n");
 		printf("	ret\n");
