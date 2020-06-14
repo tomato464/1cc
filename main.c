@@ -10,6 +10,17 @@ int main(int argc, char **argv)
 	//トークナイズする
 	Token *tok = tokenize(argv[1]);
 	Function *prog = parse(tok);
+
+	// Assign offsets to local variables.
+	for(Function *fn = prog; fn; fn = fn->next){
+		int offset = 32; // 32 for callee-saved registers
+		for(LVar *lvar = fn->locals; lvar; lvar = lvar->next){
+			offset += 8;
+			lvar->offset = offset;
+		}
+		
+	}
+
 	codegen(prog);
 
 	return 0;

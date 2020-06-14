@@ -87,11 +87,6 @@ static LVar *new_lvar(char *name, Type *ty)
 	LVar *lvar = calloc(1, sizeof(LVar));
 	lvar->name = name;
 	lvar->ty = ty;
-	if(!locals){
-		lvar->offset = 8;	
-	}else{
-		lvar->offset = locals->offset + 8;
-	}
 	lvar->next = locals;
 	locals = lvar;
 	return lvar;

@@ -26,10 +26,10 @@ assert(){
 	fi
 }
 
-assert 7 "int main(){ int x = 3; int y = 5; *(&x - 1) = 7; return y;}"
+assert 7 "int main(){ int x = 3; int y = 5; *(&x + 1) = 7; return y;}"
 assert 3 "int main(){ int x = 3; return *&x; }"
 assert 3 "int main(){ int x = 3; int *y = &x; int **z = &y; return **z; }"
-assert 5 "int main(){ int x = 3; int y = 5; return *(&x - 1);}"
+assert 5 "int main(){ int x = 3; int y = 5; return *(&x + 1);}"
 assert 8 " int main(){ int x, y; x = 3; y = 5; return x + y;}"
 assert 8 "int main(){ int x = 3, y = 5; return x + y;}"
 assert 5 "int main(){ int x; int *y; y = &x; *y = 5; return x;}"
