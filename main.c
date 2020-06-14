@@ -1,5 +1,10 @@
 #include "1cc.h"
 
+static int align_to(int n, int align)
+{
+	return (n + align - 1) & ~(align - 1);
+}
+
 int main(int argc, char **argv)
 {
 	if(argc != 2){
@@ -18,6 +23,7 @@ int main(int argc, char **argv)
 			offset += 8;
 			lvar->offset = offset;
 		}
+		fn->stack_size = align_to(offset, 16);
 		
 	}
 

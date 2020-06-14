@@ -120,7 +120,7 @@ struct Function
 	
 	Node *node;
 	LVar *locals;
-	int stacksize;
+	int stack_size;
 };
 
 //最初は+,-の処理を構文木を使って処理できるようにする
