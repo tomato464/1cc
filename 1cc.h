@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct Type Type;
+
 //token.c
 typedef enum
 {
@@ -36,6 +38,7 @@ void error_tok(Token *tok, char *fmt, ...);
 
 bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
+bool consume(Token **rest, Token *tok, char *op);
 
 //入力文字列pをトークナイズしてそれを返す
 Token *tokenize();
@@ -73,6 +76,7 @@ struct LVar
 {
 	LVar *next;	//次の変数がNULL
 	char *name;	//変数の名前
+	Type *ty;	//type
 	int offset;	//RBPからのオフセット
 };
 
@@ -80,11 +84,12 @@ struct LVar
 struct Node
 {
 	Nodekind kind;	//ノードの種類
-	Node *lhs;	//左辺
-	Node *rhs;	//右辺
 	Node *next;	//次のノード
+	Type *ty;	// Type, ()
 	Token *tok;	//Representative Token
 
+	Node *lhs;	//左辺
+	Node *rhs;	//右辺
 	//for, if, whileの時、使う
 	Node *cond;
 	Node *then;
@@ -120,6 +125,41 @@ struct Function
 
 //最初は+,-の処理を構文木を使って処理できるようにする
 Function *parse(Token *tok);
+
+//type.c
+
+typedef enum {
+	TY_INT,
+	TY_PTR,
+	TY_FUNC,
+} Typekind;
+
+struct Type {
+	Typekind kind;
+	
+	//Pointer
+	Type *base;
+
+	// Declaration
+	Token *name;
+
+	//Function type
+	Type *return_ty;
+	Type *params;
+	Type *next;
+};
+
+extern Type *ty_int;
+
+bool is_integer(Type *ty);
+
+Type *copy_type(Type *ty);
+
+Type *pointer_to(Type *base);
+
+Type *func_type(Type *return_ty);
+
+void add_type(Node *node);
 
 //codegne.c
 //コードを生成

@@ -2,7 +2,9 @@
 
 LVar *locals;
 
-static void typespec(Token **rest, Token *tok);
+static Type *typespec(Token **rest, Token *tok);
+static Type *declarator(Token **rest, Token *tok, Type *ty);
+static Node *declaration(Token **rest, Token *tok);
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
@@ -80,10 +82,11 @@ static Node *new_lvar_node(LVar *lvar, Token *tok)
 	return node;
 }
 
-static LVar *new_lvar(char *name)
+static LVar *new_lvar(char *name, Type *ty)
 {
 	LVar *lvar = calloc(1, sizeof(LVar));
 	lvar->name = name;
+	lvar->ty = ty;
 	if(!locals){
 		lvar->offset = 8;	
 	}else{
@@ -94,65 +97,108 @@ static LVar *new_lvar(char *name)
 	return lvar;
 }
 
-static void declaration(Token **rest, Token *tok)
+//　typespec = "int"
+static Type *typespec(Token **rest, Token *tok)
 {
-	typespec(&tok, tok);
+	*rest = skip(tok, "int");
+	return ty_int;
+}
+
+// type-suffix	= ( "(" func-params? ")" )?
+// func-params	= param ( "," param)*
+// param	= typespec declarator
+static Type *type_suffix(Token **rest, Token *tok, Type *ty)
+{
+	if(equal(tok, "(")){
+		tok = tok->next;
+
+		Type head = {};
+		Type *cur = &head;
+
+		while(!equal(tok, ")")){
+			if(cur != &head){
+				tok = skip(tok, ",");
+			}
+
+			Type *basety = typespec(&tok, tok);
+			Type *ty = declarator(&tok, tok, basety);
+			cur->next = copy_type(ty);
+			cur = cur->next;
+		}
+
+		ty = func_type(ty);
+		ty->params = head.next;
+		*rest = tok->next;
+		return ty;
+
+	}
+	*rest = tok;
+	return ty;
+
+}
+
+static Type *declarator(Token **rest, Token *tok, Type *ty)
+{
+	while(consume(&tok, tok, "*")){
+		ty = pointer_to(ty);
+	}
+
+	if(tok->kind != TK_IDENT){
+		error_tok(tok, "expected a variable name");
+	}
+
+	ty = type_suffix(rest, tok->next, ty);
+	ty->name = tok;
+	return ty;
+}
+
+static Node *declaration(Token **rest, Token *tok)
+{
+	Type *basety = typespec(&tok, tok);
+
+	Node head = {};
+	Node *cur = &head;
 	int cnt = 0;
 
 	while(!equal(tok, ";")){
 		if(cnt++ > 0){
-			tok = skip(tok, ",");
+			tok = skip(tok, ",");	
+		}
+		Type *ty = declarator(&tok, tok, basety);
+		LVar *lvar = new_lvar(get_ident(ty->name), ty);
+
+		if(!equal(tok, "=")){
+			continue;
 		}
 
-		if(tok->kind != TK_IDENT){
-			error("expected variable identifir");
-		}
-
-		LVar *lvar = new_lvar(get_ident(tok));
-		tok = tok->next;
+		Node *lhs = new_lvar_node(lvar, ty->name);
+		Node *rhs = assign(&tok, tok->next);
+		Node *node = new_binary(ND_ASSIGN, lhs, rhs, tok);
+		cur->next = new_unary(ND_EXPR_STMT, node, tok);
+		cur = cur->next;
 	}
-
+	Node *node = new_node(ND_BLOCK, tok);
+	node->body = head.next;
 	*rest = tok->next;
-	return;
+	return node;
 }
 
-//　typespec = "int"
-static void typespec(Token **rest, Token *tok)
-{
-	*rest = skip(tok, "int");
-	return;
-}
+
 
 static Function *funcdef(Token **rest, Token *tok)
 {
 	locals = NULL;
-	typespec(&tok, tok);
-
-	if(tok->kind != TK_IDENT){
-		error_tok(tok, "expected a function name");
-	}
+	Type *ty = typespec(&tok, tok);
+	ty = declarator(&tok, tok, ty);
 
 	Function *fn = calloc(1, sizeof(Function));
-	fn->name = get_ident(tok);
+	fn->name = get_ident(ty->name);
 
-	tok = tok->next;
-	if(equal(tok, "(")){
-		tok = tok->next;
-
-		while(!equal(tok, ")")){
-			if(locals){
-				tok = skip(tok, ",");
-			}
-			typespec(&tok, tok);
-
-			new_lvar(get_ident(tok));
-			tok = tok->next;
-		}
-
-		tok = skip(tok, ")");
+	for(Type *t = ty->params; t; t = t->next){
+		new_lvar(get_ident(t->name), t);
 	}
 	fn->params = locals;
-	*rest = tok;
+
 	tok = skip(tok, "{");
 	fn->node = compound_stmt(rest, tok)->body;
 	fn->locals = locals;
@@ -237,11 +283,13 @@ static Node *compound_stmt(Token **rest, Token *tok)
 	Node *cur = &head;
 	while(!equal(tok, "}")){
 		if(equal(tok, "int")){
-			declaration(&tok, tok);
+			cur->next = declaration(&tok, tok);
+			cur = cur->next;
 		}else{
 			cur->next = stmt(&tok, tok);
 			cur = cur->next;
 		}
+		//add_type(cur);
 	}
 	node->body = head.next;
 	*rest = tok->next;

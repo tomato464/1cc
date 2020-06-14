@@ -55,6 +55,16 @@ Token *skip(Token *tok, char *op)
 	return tok->next;
 }
 
+bool consume(Token **rest, Token *tok, char *op)
+{
+	if(equal(tok, op)){
+		*rest = tok->next;
+		return true;
+	}
+	*rest = tok;
+	return false;
+}
+
 //新しいトークンを生成してcurに繋げる
 static Token *new_token(Tokenkind kind, Token *cur, char *str, int len)
 {

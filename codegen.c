@@ -13,7 +13,7 @@ static void gen_addr(Node *node)
 		case ND_LVAR:
 			printf("	mov	rax,rbp\n");
 			printf("	sub	rax,%d\n", node->lvar->offset);
-			printf("	push	rax\n");
+			printf("	push	rax\n");//スタックの一番上はローカル変数の番地
 			return;
 
 		case ND_DEREF:
