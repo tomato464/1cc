@@ -26,6 +26,17 @@ assert(){
 	fi
 }
 
+assert 0 "int x; int main(){return x;}"
+assert 3 "int x; int main(){ x = 3; return x;}"
+assert 7 "int x; int y; int main(){ x = 3; y =4; return x + y;}"
+assert 7 "int x, y; int main(){ x = 3; y = 4; return x + y;}"
+assert 0 "int x[4]; int main(){ x[0]=0; x[1] = 1; x[2] = 2; x[3] = 3;return x[0]; } " 
+assert 1 "int x[4]; int main(){ x[0]=0; x[1] = 1; x[2] = 2; x[3] = 3;return x[1]; } " 
+assert 2 "int x[4]; int main(){ x[0]=0; x[1] = 1; x[2] = 2; x[3] = 3;return x[2]; } " 
+assert 3 "int x[4]; int main(){ x[0]=0; x[1] = 1; x[2] = 2; x[3] = 3;return x[3]; } " 
+assert 8 "int x; int main(){return sizeof(x);}"
+assert 32 "int x[4]; int main(){ return sizeof(x); }"
+
 assert 8 "int main(){int x; return sizeof(x);}"
 assert 8 "int main(){int x; return sizeof x ;}"
 assert 8 "int main(){int *x; return sizeof(x);}"
@@ -114,4 +125,5 @@ assert 10 "int main(){int i; i = 0;for(;i < 10;)i = i + 1;return i;}"
 assert 30 "int main(){int x; x = 43; if(x == 43){ x = x + 1; if(x != 43){x = 30;return x;}else{x = 50; return x;}}}"
 assert 40 "int main(){int x; int y; x = 10;if(x == 10){x = 20;y = 20; x = x + y;}return x;}"
 assert 10 "int main(){int x; int y; x = 10;if(x != 10){x = 20;y = 20; x = x + y;}return x;}"
+assert 3 "int x; int main(){x = 3; return x;}"
 echo OK

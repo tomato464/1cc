@@ -70,6 +70,7 @@ typedef enum{
 
 typedef struct Node Node;
 
+//Variable
 typedef struct Var Var;
 
 struct Var
@@ -78,6 +79,7 @@ struct Var
 	char *name;	//変数の名前
 	Type *ty;	//type
 	int offset;	//RBPからのオフセット
+	bool is_local;	// local or global
 };
 
 
@@ -123,8 +125,12 @@ struct Function
 	int stack_size;
 };
 
-//最初は+,-の処理を構文木を使って処理できるようにする
-Function *parse(Token *tok);
+typedef struct{
+	Var *globals;
+	Function *fns;
+} Program;
+
+Program *parse(Token *tok);
 
 //type.c
 
@@ -171,4 +177,4 @@ void add_type(Node *node);
 
 //codegne.c
 //コードを生成
-void codegen(Function *prog);
+void codegen(Program *prog);
