@@ -63,18 +63,18 @@ typedef enum{
 	ND_WHILE,	//while
 	ND_FOR,		//for
 	ND_BLOCK,	// {...}
-	ND_LVAR,	// Local変数
+	ND_VAR,	// Local変数
 	ND_EXPR_STMT,	// Expression statement
 	ND_NUM,		// integer
 } Nodekind;
 
 typedef struct Node Node;
 
-typedef struct LVar LVar;
+typedef struct Var Var;
 
-struct LVar
+struct Var
 {
-	LVar *next;	//次の変数がNULL
+	Var *next;	//次の変数がNULL
 	char *name;	//変数の名前
 	Type *ty;	//type
 	int offset;	//RBPからのオフセット
@@ -107,7 +107,7 @@ struct Node
 	
 	long val;	//ND_NUMの時のみ使う
 
-	LVar *lvar;	// lond == ND_LVARの時に使う
+	Var *var;	// lond == ND_LVARの時に使う
 };
 
 typedef struct Function Function;
@@ -116,10 +116,10 @@ struct Function
 {
 	Function *next;
 	char *name;
-	LVar *params;
+	Var *params;
 	
 	Node *node;
-	LVar *locals;
+	Var *locals;
 	int stack_size;
 };
 

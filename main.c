@@ -18,9 +18,9 @@ int main(int argc, char **argv)
 	// Assign offsets to local variables.
 	for(Function *fn = prog; fn; fn = fn->next){
 		int offset = 32; // 32 for callee-saved registers
-		for(LVar *lvar = fn->locals; lvar; lvar = lvar->next){
-			offset += lvar->ty->size;
-			lvar->offset = offset;
+		for(Var *var = fn->locals; var; var = var->next){
+			offset += var->ty->size;
+			var->offset = offset;
 		}
 		fn->stack_size = align_to(offset, 16);
 		

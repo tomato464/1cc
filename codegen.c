@@ -20,8 +20,8 @@ static void gen_expr(Node *node);
 static void gen_addr(Node *node)
 {
 	switch(node->kind){
-		case ND_LVAR:
-			printf("	lea	%s,[rbp - %d]\n",reg(top++), node->lvar->offset);
+		case ND_VAR:
+			printf("	lea	%s,[rbp - %d]\n",reg(top++), node->var->offset);
 			return;
 
 		case ND_DEREF:
@@ -54,7 +54,7 @@ static void gen_expr(Node *node)
 			printf("	mov	%s,%lu\n", reg(top++), node->val);
 			return;
 
-		case ND_LVAR:
+		case ND_VAR:
 			gen_addr(node);
 			load(node->ty);
 			return;
@@ -272,12 +272,12 @@ void codegen(Function *prog)
 
 		//パラメータの代入
 		int i = 0;
-		for(LVar *lvar = fn->params; lvar; lvar = lvar->next){
+		for(Var *var = fn->params; var; var = var->next){
 			i++;
 		}
 
-		for(LVar *lvar = fn->params; lvar; lvar = lvar->next){
-			printf("	mov	[rbp - %d],%s\n", lvar->offset, argreg[ --i]);
+		for(Var *var = fn->params; var; var = var->next){
+			printf("	mov	[rbp - %d],%s\n", var->offset, argreg[ --i]);
 		}
 
 		//先頭の式から順にコード生成

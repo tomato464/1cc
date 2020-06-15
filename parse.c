@@ -1,6 +1,6 @@
 #include "1cc.h"
 
-LVar *locals;
+Var *locals;
 
 static Type *typespec(Token **rest, Token *tok);
 static Type *declarator(Token **rest, Token *tok, Type *ty);
@@ -67,31 +67,31 @@ static long get_number(Token *tok)
 }
 
 //変数名を検索する。見つからなかった場合はNULLを返す。
-static LVar *find_lvar(Token *tok)
+static Var *find_var(Token *tok)
 {
-	for(LVar *lvar = locals; lvar; lvar = lvar->next){
-		if(strlen(lvar->name) == tok->len && !strncmp(tok->loc, lvar->name, tok->len)){
-			return lvar;
+	for(Var *var = locals; var; var = var->next){
+		if(strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len)){
+			return var;
 		}
 	}
 	return NULL;
 }
 
-static Node *new_lvar_node(LVar *lvar, Token *tok)
+static Node *new_var_node(Var *var, Token *tok)
 {
-	Node *node = new_node(ND_LVAR, tok);
-	node->lvar = lvar;
+	Node *node = new_node(ND_VAR, tok);
+	node->var = var;
 	return node;
 }
 
-static LVar *new_lvar(char *name, Type *ty)
+static Var *new_lvar(char *name, Type *ty)
 {
-	LVar *lvar = calloc(1, sizeof(LVar));
-	lvar->name = name;
-	lvar->ty = ty;
-	lvar->next = locals;
-	locals = lvar;
-	return lvar;
+	Var *var = calloc(1, sizeof(Var));
+	var->name = name;
+	var->ty = ty;
+	var->next = locals;
+	locals = var;
+	return var;
 }
 
 //　typespec = "int"
@@ -171,13 +171,13 @@ static Node *declaration(Token **rest, Token *tok)
 			tok = skip(tok, ",");	
 		}
 		Type *ty = declarator(&tok, tok, basety);
-		LVar *lvar = new_lvar(get_ident(ty->name), ty);
+		Var *var = new_lvar(get_ident(ty->name), ty);
 
 		if(!equal(tok, "=")){
 			continue;
 		}
 
-		Node *lhs = new_lvar_node(lvar, ty->name);
+		Node *lhs = new_var_node(var, ty->name);
 		Node *rhs = assign(&tok, tok->next);
 		Node *node = new_binary(ND_ASSIGN, lhs, rhs, tok);
 		cur->next = new_unary(ND_EXPR_STMT, node, tok);
@@ -576,17 +576,17 @@ static Node *primary(Token **rest, Token *tok)
 	if(tok->kind == TK_IDENT){
 		//function call
 		if(equal(tok->next, "(")){
-			return funcall(rest, tok);
+			return funcall(rest, tok); 
 		}
 
 		//variable
 
-		LVar *lvar = find_lvar(tok);
-		if(!lvar){//無かったら
+		Var *var = find_var(tok);
+		if(!var){//無かったら
 			error_tok(tok, "undefined variable");
 		}
 		*rest = tok->next;
-		return new_lvar_node(lvar, tok);
+		return new_var_node(var, tok);
 	}
 
 	Node *node = new_num(get_number(tok), tok);
