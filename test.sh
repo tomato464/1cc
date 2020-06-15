@@ -26,6 +26,11 @@ assert(){
 	fi
 }
 
+assert 5 "int main(){ int x[3]; *x = 3; *(x + 1) = 4; *(x + 2) = 5; return *(x + 2);}"
+assert 4 "int main(){ int x[3]; *x = 3; *(x + 1) = 4; *(x + 2) = 5; return *(x + 1);}"
+assert 3 "int main(){ int x[3]; *x = 3; *(x + 1) = 4; *(x + 2) = 5; return *x;}"
+assert 3 "int main(){ int x[2]; int *y = &x; *y = 3; return *x;}"
+assert 7 "int main(){ int x = 3; int y = 5; *(&x + 1) = 7; return y;}"
 assert 10 "int main(){int x; x = 10;int i; for(i = 0; i < 10; i = i + 1)x = x + 1; return i;}"
 assert 21 "int main(){ return add6(1, 2, 3, 4, 5, 6); }"
 assert 3 "int main(){ return ret3(); }"
@@ -34,7 +39,6 @@ assert 50 "int main(){int b; b = 50; return b;}"
 assert 18  "int main(){return 3*4 + 2*3;}"
 assert 8 " int main(){ int x, y; x = 3; y = 5; return x + y;}"
 assert 0 "int main(){ return 0; }"
-assert 7 "int main(){ int x = 3; int y = 5; *(&x + 1) = 7; return y;}"
 assert 3 "int main(){ int x = 3; return *&x; }"
 assert 3 "int main(){ int x = 3; int *y = &x; int **z = &y; return **z; }"
 assert 5 "int main(){ int x = 3; int y = 5; return *(&x + 1);}"

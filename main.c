@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	for(Function *fn = prog; fn; fn = fn->next){
 		int offset = 32; // 32 for callee-saved registers
 		for(LVar *lvar = fn->locals; lvar; lvar = lvar->next){
-			offset += 8;
+			offset += lvar->ty->size;
 			lvar->offset = offset;
 		}
 		fn->stack_size = align_to(offset, 16);
