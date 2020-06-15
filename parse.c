@@ -542,6 +542,11 @@ static Node *primary(Token **rest, Token *tok)
 		return node;
 	}
 
+	if(equal(tok, "sizeof")){
+		Node *node = unary(rest, tok->next);
+		add_type(node);
+		return new_num(node->ty->size, tok);
+	}
 	
 	if(tok->kind == TK_IDENT){
 		//function call
