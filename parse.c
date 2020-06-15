@@ -1,17 +1,22 @@
 #include "1cc.h"
 
-LVar *locals;
+Var *locals;
+Var *globals;
 
-static void typespec(Token **rest, Token *tok);
+static Type *typespec(Token **rest, Token *tok);
+static Type *declarator(Token **rest, Token *tok, Type *ty);
+static Node *declaration(Token **rest, Token *tok);
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
+static Node *expr_stmt(Token **rest, Token *tok);
 static Node *assign(Token **rest, Token *tok);
 static Node *equality(Token **rest, Token *tok);
 static Node *relational(Token **rest, Token *tok);
 static Node *add(Token **rest, Token *tok);
 static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
+static Node *postfix(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 
 
@@ -63,96 +68,163 @@ static long get_number(Token *tok)
 }
 
 //変数名を検索する。見つからなかった場合はNULLを返す。
-static LVar *find_lvar(Token *tok)
+static Var *find_var(Token *tok)
 {
-	for(LVar *lvar = locals; lvar; lvar = lvar->next){
-		if(strlen(lvar->name) == tok->len && !strncmp(tok->loc, lvar->name, tok->len)){
-			return lvar;
+	for(Var *var = locals; var; var = var->next){
+		if(strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len)){
+			return var;
 		}
 	}
+
+	for(Var *var = globals; var; var = var->next){
+		if(strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len)){
+			return var;
+		}
+	}
+
 	return NULL;
 }
 
-static Node *new_lvar_node(LVar *lvar, Token *tok)
+static Node *new_var_node(Var *var, Token *tok)
 {
-	Node *node = new_node(ND_LVAR, tok);
-	node->lvar = lvar;
+	Node *node = new_node(ND_VAR, tok);
+	node->var = var;
 	return node;
 }
 
-static LVar *new_lvar(char *name)
+static Var *new_lvar(char *name, Type *ty)
 {
-	LVar *lvar = calloc(1, sizeof(LVar));
-	lvar->name = name;
-	if(!locals){
-		lvar->offset = 8;	
-	}else{
-		lvar->offset = locals->offset + 8;
-	}
-	lvar->next = locals;
-	locals = lvar;
-	return lvar;
+	Var *var = calloc(1, sizeof(Var));
+	var->name = name;
+	var->ty = ty;
+	var->is_local = true;
+	var->next = locals;
+	locals = var;
+	return var;
 }
 
-static void declaration(Token **rest, Token *tok)
+static Var *new_gvar(char *name, Type *ty)
 {
-	typespec(&tok, tok);
+	Var *var = calloc(1, sizeof(Var));
+	var->name = name;
+	var->ty = ty;
+	var->is_local = false;
+	var->next = globals;
+	globals = var;
+	return var;
+}
+
+//　typespec = "int"
+static Type *typespec(Token **rest, Token *tok)
+{
+	*rest = skip(tok, "int");
+	return ty_int;
+}
+
+static Type *func_params(Token **rest, Token *tok, Type *ty)
+{
+	Type head = {};
+	Type *cur = &head;
+
+	while(!equal(tok, ")")){
+		if(cur != &head){
+			tok = skip(tok, ",");
+		}
+
+		Type *basety = typespec(&tok, tok);
+		Type *ty = declarator(&tok, tok, basety);
+		cur->next = copy_type(ty);
+		cur = cur->next;
+	}
+
+	ty = func_type(ty);
+	ty->params = head.next;
+	*rest = tok->next;
+	return ty;
+}
+
+// type-suffix	= "(" func-params
+//		= "[" num "]" type_suffix
+//		= e
+static Type *type_suffix(Token **rest, Token *tok, Type *ty)
+{
+	if(equal(tok, "(")){
+		return func_params(rest, tok->next, ty);
+	}
+	
+	if(equal(tok, "[")){
+		int sz = get_number(tok->next);
+		tok = skip(tok->next->next, "]");
+		ty = type_suffix(rest, tok, ty);
+		return array_of(ty, sz);
+	}
+
+	*rest = tok;
+	return ty;
+}
+
+static Type *declarator(Token **rest, Token *tok, Type *ty)
+{
+	while(consume(&tok, tok, "*")){
+		ty = pointer_to(ty);
+	}
+
+	if(tok->kind != TK_IDENT){
+		error_tok(tok, "expected a variable name");
+	}
+
+	ty = type_suffix(rest, tok->next, ty);
+	ty->name = tok;
+	return ty;
+}
+
+static Node *declaration(Token **rest, Token *tok)
+{
+	Type *basety = typespec(&tok, tok);
+
+	Node head = {};
+	Node *cur = &head;
 	int cnt = 0;
 
 	while(!equal(tok, ";")){
 		if(cnt++ > 0){
-			tok = skip(tok, ",");
+			tok = skip(tok, ",");	
+		}
+		Type *ty = declarator(&tok, tok, basety);
+		Var *var = new_lvar(get_ident(ty->name), ty);
+
+		if(!equal(tok, "=")){
+			continue;
 		}
 
-		if(tok->kind != TK_IDENT){
-			error("expected variable identifir");
-		}
-
-		LVar *lvar = new_lvar(get_ident(tok));
-		tok = tok->next;
+		Node *lhs = new_var_node(var, ty->name);
+		Node *rhs = assign(&tok, tok->next);
+		Node *node = new_binary(ND_ASSIGN, lhs, rhs, tok);
+		cur->next = new_unary(ND_EXPR_STMT, node, tok);
+		cur = cur->next;
 	}
-
+	Node *node = new_node(ND_BLOCK, tok);
+	node->body = head.next;
 	*rest = tok->next;
-	return;
+	return node;
 }
 
-//　typespec = "int"
-static void typespec(Token **rest, Token *tok)
-{
-	*rest = skip(tok, "int");
-	return;
-}
+
 
 static Function *funcdef(Token **rest, Token *tok)
 {
 	locals = NULL;
-	typespec(&tok, tok);
-
-	if(tok->kind != TK_IDENT){
-		error_tok(tok, "expected a function name");
-	}
+	Type *ty = typespec(&tok, tok);
+	ty = declarator(&tok, tok, ty);
 
 	Function *fn = calloc(1, sizeof(Function));
-	fn->name = get_ident(tok);
+	fn->name = get_ident(ty->name);
 
-	tok = tok->next;
-	if(equal(tok, "(")){
-		tok = tok->next;
-
-		while(!equal(tok, ")")){
-			if(locals){
-				tok = skip(tok, ",");
-			}
-			typespec(&tok, tok);
-
-			new_lvar(get_ident(tok));
-			tok = tok->next;
-		}
-
-		tok = skip(tok, ")");
+	for(Type *t = ty->params; t; t = t->next){
+		new_lvar(get_ident(t->name), t);
 	}
 	fn->params = locals;
-	*rest = tok;
+
 	tok = skip(tok, "{");
 	fn->node = compound_stmt(rest, tok)->body;
 	fn->locals = locals;
@@ -197,7 +269,7 @@ static Node *stmt(Token **rest, Token *tok)
 		tok = skip(tok->next, "(");
 
 		if(!equal(tok, ";")){
-			node->init = expr(&tok, tok);
+			node->init = expr_stmt(&tok, tok);
 		}
 		tok = skip(tok, ";");
 
@@ -207,7 +279,7 @@ static Node *stmt(Token **rest, Token *tok)
 		tok = skip(tok, ";");
 
 		if(!equal(tok, ")")){
-			node->inc = expr(&tok, tok);
+			node->inc = expr_stmt(&tok, tok);
 		}
 		tok = skip(tok, ")");
 
@@ -237,14 +309,23 @@ static Node *compound_stmt(Token **rest, Token *tok)
 	Node *cur = &head;
 	while(!equal(tok, "}")){
 		if(equal(tok, "int")){
-			declaration(&tok, tok);
+			cur->next = declaration(&tok, tok);
+			cur = cur->next;
 		}else{
 			cur->next = stmt(&tok, tok);
 			cur = cur->next;
 		}
+		add_type(cur);
 	}
 	node->body = head.next;
 	*rest = tok->next;
+	return node;
+}
+
+static Node *expr_stmt(Token **rest, Token *tok)
+{
+	Node *node = new_node(ND_EXPR_STMT, tok);
+	node->lhs = expr(rest, tok);
 	return node;
 }
 
@@ -324,6 +405,62 @@ static Node *relational(Token **rest, Token *tok)
 	}
 }
 
+// Cでは、＋はポインター型に対してうまく機能しない
+// もし、pがポインターならp+nは n を追加するのではなく sizeof(*p)*n をp	の値に加算することになる
+// 従って、p+n　n個の要素分先の番地を指すことになる
+// 言い換えれば、加算をする前に整数値をスケーリングする必要がある。
+// この関数はそれを解決している
+static Node *new_add(Node *lhs, Node *rhs, Token *tok)
+{
+	add_type(lhs);
+	add_type(rhs);
+	
+	// num + num
+	if(is_integer(lhs->ty) && is_integer(rhs->ty)){
+		return new_binary(ND_ADD, lhs, rhs, tok);
+	}
+
+	if(lhs->ty->base && rhs->ty->base){
+		error_tok(tok, "invalid operands");
+	}
+
+	//Canonicalize num + ptr to ptr + num
+	if(!lhs->ty->base && rhs->ty->base){
+		Node *tmp = lhs;
+		lhs = rhs;
+		rhs = tmp;
+	}
+
+	// ptr + num
+	rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+	return new_binary(ND_ADD, lhs, rhs, tok);
+}
+
+static Node *new_sub(Node *lhs, Node *rhs, Token *tok)
+{
+	add_type(lhs);
+	add_type(rhs);
+
+	//num - num
+	if(is_integer(lhs->ty) && is_integer(rhs->ty)){
+		return new_binary(ND_SUB, lhs, rhs, tok);
+	}
+
+	//ptr - num
+	if(lhs->ty->base && is_integer(rhs->ty)){
+		rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+		return new_binary(ND_SUB, lhs, rhs, tok);
+	}
+
+	// ptr - ptr, この二つの間にいくつの要素があるのかを返す
+	if(lhs->ty->base && rhs->ty->base){
+		Node *node = new_binary(ND_SUB, lhs, rhs, tok);
+		return new_binary(ND_DIV, node, new_num(lhs->ty->base->size, tok), tok);
+	}
+
+	error_tok(tok, "invalid operands");
+}
+
 // add = mul ("+" mul | "-"mul)*
 static Node *add(Token **rest, Token *tok)
 {
@@ -334,13 +471,13 @@ static Node *add(Token **rest, Token *tok)
 
 		if(equal(tok, "+")){
 			Node *rhs = mul(&tok, tok->next);
-			node = new_binary(ND_ADD, node, rhs, start);
+			node = new_add(node, rhs, start);
 			continue;
 		}
 
 		if(equal(tok, "-")){
 			Node *rhs = mul(&tok, tok->next);
-			node = new_binary(ND_SUB, node, rhs, start);
+			node = new_sub(node, rhs, start);
 			continue;
 		}
 		*rest = tok;
@@ -373,7 +510,8 @@ static Node *mul(Token **rest, Token *tok)
 	}
 }
 
-//unary = ('+' | '-')?primary
+//unary = ('+' | '-' | "*" | "&") unary
+//	| postfix
 static Node *unary(Token **rest, Token *tok)
 {
 	if(equal(tok, "+")){
@@ -394,7 +532,49 @@ static Node *unary(Token **rest, Token *tok)
 		return new_unary(ND_DEREF, lhs, tok);
 	}
 
-	return primary(rest, tok);
+	return postfix(rest, tok);
+}
+
+// postfix = primary ( "["  expr "]")*
+static Node *postfix(Token **rest, Token *tok)
+{
+	Node *node = primary(&tok, tok);
+
+	while(equal(tok, "[")){
+		// x[y] is short for *(x + y)
+		Token *start = tok;
+		Node *idx = expr(&tok, tok->next);
+		tok = skip(tok, "]");
+		node = new_unary(ND_DEREF, new_add(node, idx, start), start);
+	}
+
+	*rest = tok;
+	return node;
+}
+
+static Node *funcall(Token **rest, Token *tok)
+{
+	Token *start = tok;
+	tok = tok->next->next;
+
+	Node head = {};
+	Node *cur = &head;
+
+	while(!equal(tok, ")")){
+		if(cur != &head){
+			tok = skip(tok, ",");
+		}
+
+		cur->next = assign(&tok, tok);
+		cur = cur->next;
+	}
+
+	*rest = skip(tok, ")");
+
+	Node *node = new_node(ND_FUNCALL, start);
+	node->funcname = strndup(start->loc, start->len);
+	node->args = head.next;
+	return node;
 }
 
 //primary = num | "("expr")"| ident args?
@@ -407,54 +587,65 @@ static Node *primary(Token **rest, Token *tok)
 		return node;
 	}
 
+	if(equal(tok, "sizeof")){
+		Node *node = unary(rest, tok->next);
+		add_type(node);
+		return new_num(node->ty->size, tok);
+	}
 	
 	if(tok->kind == TK_IDENT){
 		//function call
 		if(equal(tok->next, "(")){
-			Token *start = tok;
-			tok = tok->next->next;
-
-			Node head = {};
-			Node *cur = &head;
-			while(!equal(tok, ")")){
-				if(cur != &head){
-					tok = skip(tok, ",");
-				}
-
-				cur->next = assign(&tok, tok);
-				cur = cur->next;
-			}
-
-			*rest = skip(tok, ")");
-
-			Node *node = new_node(ND_FUNCALL, start);
-			node->funcname = strndup(start->loc, start->len);
-			node->args = head.next;
-			return node;
+			return funcall(rest, tok); 
 		}
 
 		//variable
 
-		LVar *lvar = find_lvar(tok);
-		if(!lvar){//無かったら
+		Var *var = find_var(tok);
+		if(!var){//無かったら
 			error_tok(tok, "undefined variable");
 		}
 		*rest = tok->next;
-		return new_lvar_node(lvar, tok);
+		return new_var_node(var, tok);
 	}
 
 	Node *node = new_num(get_number(tok), tok);
 	*rest = tok->next;
 	return node;
 }
-///program = funcdef*
-Function *parse(Token *tok)
+
+///program = ( funcdef | global->var)*
+Program *parse(Token *tok)
 {
 	Function head = {};
 	Function *cur = &head;
+	globals = NULL;
+
 	while(tok->kind != TK_EOF){
-		cur->next = funcdef(&tok, tok);
-		cur = cur->next;
+		Token *start = tok;
+		Type *basety = typespec(&tok, tok);
+		Type *ty = declarator(&tok, tok, basety);
+
+		//Function
+		if(ty->kind == TY_FUNC){
+			cur->next = funcdef(&tok, start);
+			cur = cur->next;
+			continue;	
+		}
+
+		//Global variable
+		for(;;){
+			new_gvar(get_ident(ty->name), ty);
+			if(consume(&tok, tok, ";")){
+				break;
+			}
+			tok = skip(tok, ",");
+			ty = declarator(&tok, tok, basety);
+		}
 	}
-	return head.next;
+
+	Program *prog = calloc(1, sizeof(Program));
+	prog->globals = globals;
+	prog->fns = head.next;
+	return prog;
 }

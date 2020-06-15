@@ -55,6 +55,16 @@ Token *skip(Token *tok, char *op)
 	return tok->next;
 }
 
+bool consume(Token **rest, Token *tok, char *op)
+{
+	if(equal(tok, op)){
+		*rest = tok->next;
+		return true;
+	}
+	*rest = tok;
+	return false;
+}
+
 //新しいトークンを生成してcurに繋げる
 static Token *new_token(Tokenkind kind, Token *cur, char *str, int len)
 {
@@ -91,7 +101,7 @@ static bool startswith(char *p, char *q)
 
 static bool is_keyword(Token *tok)
 {
-	char *key[] = {"while", "if", "for", "return", "else", "int"};
+	char *key[] = {"while", "if", "for", "return", "else", "int", "sizeof"};
 
 	for(int i = 0; i < sizeof(key) / sizeof(*key); i++){
 		if(equal(tok, key[i])){
