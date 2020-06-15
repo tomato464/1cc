@@ -15,6 +15,7 @@ static Node *relational(Token **rest, Token *tok);
 static Node *add(Token **rest, Token *tok);
 static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
+static Node *postfix(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 
 
@@ -489,7 +490,8 @@ static Node *mul(Token **rest, Token *tok)
 	}
 }
 
-//unary = ('+' | '-')?primary
+//unary = ('+' | '-' | "*" | "&") unary
+//	| postfix
 static Node *unary(Token **rest, Token *tok)
 {
 	if(equal(tok, "+")){
@@ -510,7 +512,24 @@ static Node *unary(Token **rest, Token *tok)
 		return new_unary(ND_DEREF, lhs, tok);
 	}
 
-	return primary(rest, tok);
+	return postfix(rest, tok);
+}
+
+// postfix = primary ( "["  expr "]")*
+static Node *postfix(Token **rest, Token *tok)
+{
+	Node *node = primary(&tok, tok);
+
+	while(equal(tok, "[")){
+		// x[y] is short for *(x + y)
+		Token *start = tok;
+		Node *idx = expr(&tok, tok->next);
+		tok = skip(tok, "]");
+		node = new_unary(ND_DEREF, new_add(node, idx, start), start);
+	}
+
+	*rest = tok;
+	return node;
 }
 
 //primary = num | "("expr")"| ident args?
