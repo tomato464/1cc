@@ -114,11 +114,22 @@ static Var *new_gvar(char *name, Type *ty)
 	return var;
 }
 
-//　typespec = "int"
+//　typespec = "int" || "char"
 static Type *typespec(Token **rest, Token *tok)
 {
+	if(equal(tok, "char")){
+		*rest = tok->next;
+		return ty_char;
+	}
+
 	*rest = skip(tok, "int");
 	return ty_int;
+}
+
+// Returns true if a given token represents a type
+static bool is_typename(Token *tok)
+{
+	return equal(tok, "char") || equal(tok, "int");
 }
 
 static Type *func_params(Token **rest, Token *tok, Type *ty)
@@ -308,7 +319,7 @@ static Node *compound_stmt(Token **rest, Token *tok)
 	Node head = {};
 	Node *cur = &head;
 	while(!equal(tok, "}")){
-		if(equal(tok, "int")){
+		if(is_typename(tok)){
 			cur->next = declaration(&tok, tok);
 			cur = cur->next;
 		}else{

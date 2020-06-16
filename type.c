@@ -1,10 +1,19 @@
 #include "1cc.h"
 
 Type *ty_int = &(Type){TY_INT, 8};
+Type *ty_char = &(Type) {TY_CHAR, 1};
+
+static Type *new_type(Typekind kind, int size)
+{
+	Type *ty = malloc(sizeof(sizeof(Type)));
+	ty->kind = kind;
+	ty->size = size;
+	return ty;
+}
 
 bool is_integer(Type *ty)
 {
-	return ty->kind == TY_INT;
+	return ty->kind == TY_INT || ty->kind == TY_CHAR;
 }
 
 Type *copy_type(Type *ty)
