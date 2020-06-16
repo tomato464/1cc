@@ -50,6 +50,33 @@ static Node *new_num(long val, Token *tok)
 	return node;
 }
 
+static Var *new_gvar(char *name, Type *ty)
+{
+	Var *var = calloc(1, sizeof(Var));
+	var->name = name;
+	var->ty = ty;
+	var->is_local = false;
+	var->next = globals;
+	globals = var;
+	return var;
+}
+
+static char *new_gvar_name(void)
+{
+	static int cnt = 0;
+	char *buf = malloc(20);
+	sprintf(buf, ".L.data.%d", cnt++);
+	return buf;
+}
+
+static Var *new_string_literal(char *p, int len)
+{
+	Type *ty = array_of(ty_char, len);
+	Var *var = new_gvar(new_gvar_name(), ty);
+	var->init_data = p;
+	return var;
+}
+
 static char *get_ident(Token *tok)
 {
 	if(tok->kind != TK_IDENT){
@@ -100,17 +127,6 @@ static Var *new_lvar(char *name, Type *ty)
 	var->is_local = true;
 	var->next = locals;
 	locals = var;
-	return var;
-}
-
-static Var *new_gvar(char *name, Type *ty)
-{
-	Var *var = calloc(1, sizeof(Var));
-	var->name = name;
-	var->ty = ty;
-	var->is_local = false;
-	var->next = globals;
-	globals = var;
 	return var;
 }
 
@@ -588,7 +604,7 @@ static Node *funcall(Token **rest, Token *tok)
 	return node;
 }
 
-//primary = num | "("expr")"| ident args?
+//primary = num | str | "("expr")"| ident args?
 // args = "(" ")"
 static Node *primary(Token **rest, Token *tok)
 {
@@ -618,6 +634,16 @@ static Node *primary(Token **rest, Token *tok)
 		}
 		*rest = tok->next;
 		return new_var_node(var, tok);
+	}
+
+	if(tok->kind == TK_STR){
+		Var *var = new_string_literal(tok->contents, tok->cont_len);
+		*rest = tok->next;
+		return new_var_node(var, tok);
+	}
+
+	if(tok->kind != TK_NUM){
+		error_tok(tok, "expected expression");
 	}
 
 	Node *node = new_num(get_number(tok), tok);

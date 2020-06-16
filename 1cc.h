@@ -14,6 +14,7 @@ typedef enum
 {
 	TK_RESERVED,	//記号
 	TK_IDENT,	//変数
+	TK_STR,		// 文字リテラル	
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -28,6 +29,9 @@ struct Token
 	int val;	//kindがTK_NUMの場合、その値
 	char *loc;	//トークンのロケーション
 	int len;	//トークン文字列の長さ
+
+	char *contents;	// String literal contents including terminating "\0"
+	char cont_len;	// string literal length
 };
 
 
@@ -78,8 +82,13 @@ struct Var
 	Var *next;	//次の変数がNULL
 	char *name;	//変数の名前
 	Type *ty;	//type
-	int offset;	//RBPからのオフセット
 	bool is_local;	// local or global
+
+	//Local variable
+	int offset;	
+
+	//Global variable
+	char *init_data;
 };
 
 
