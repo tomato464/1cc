@@ -99,20 +99,56 @@ static bool startswith(char *p, char *q)
 	return memcmp(p, q, strlen(q)) == 0;//p==qでtrueを返す
 }
 
+static char read_escaped_char(char *p)
+{
+	switch(*p){
+		case 'a': return '\a';
+		case 'b': return '\b';
+		case 't': return '\t';
+		case 'n': return '\n';
+		case 'v': return '\v';
+		case 'f': return '\f';
+		case 'r': return '\r';
+		case 'e': return 27;
+		default: return *p;
+	}
+}
+
 static Token *read_string_literal(Token *cur, char *start)
 {
 	char *p = start + 1;
-	while(*p && *p != '"'){
-		p++;
+	char *end = p;
+	
+	//find the closing double-quote
+	for(; *end != '"'; end++){
+		if(*end == '\0'){
+			error_at(start, "unclosing string literal");
+		}
+	
+		if(*end == '\\'){
+			end++;
+		}
 	}
 
-	if(!*p){
-		error_at(start, "unclosed string literal");	
+	// Allocate a buffer that os large enough to hold the entire string literal
+	char *buf = malloc(end - p + 1);
+	int len = 0;
+
+	while(*p != '"'){
+		if(*p == '\\'){
+			buf[len++] = read_escaped_char(p + 1);
+			p += 2;
+		}else{
+			buf[len++] = *p++;
+		}
 	}
 
-	Token *tok = new_token(TK_STR, cur, start, p - start + 1);
-	tok->contents = strndup(start + 1, p - start - 1);
-	tok->cont_len = p - start;
+	buf[len++] = '\0';
+
+	Token *tok = new_token(TK_STR, cur, start, p -start + 1);
+	
+	tok->contents = buf;
+	tok->cont_len = len;
 	return tok;
 }
 
