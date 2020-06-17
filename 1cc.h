@@ -67,8 +67,9 @@ typedef enum{
 	ND_WHILE,	//while
 	ND_FOR,		//for
 	ND_BLOCK,	// {...}
-	ND_VAR,	// Local変数
+	ND_VAR,		// Local変数
 	ND_EXPR_STMT,	// Expression statement
+	ND_STMT_EXPR,	// Statement Expression
 	ND_NUM,		// integer
 } Nodekind;
 
@@ -108,7 +109,7 @@ struct Node
 	Node *inc;
 	Node *init;
 
-	// {...}の中身を格納
+	// block ir statement expression
 	Node *body;
 
 	// function callの時に使う、関数名

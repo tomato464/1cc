@@ -604,10 +604,32 @@ static Node *funcall(Token **rest, Token *tok)
 	return node;
 }
 
-//primary = num | str | "("expr")"| ident args?
-// args = "(" ")"
+//primary =	"(" "{" stmt stmt* "}" ")"
+//		| "sizeof" unary
+//	 	| num 
+//		| str 
+//		| "("expr")"
+//		| ident func-args?
 static Node *primary(Token **rest, Token *tok)
 {
+	if(equal(tok, "(") && equal(tok->next, "{")){
+		// this is a GNU statement expression
+		Node *node = new_node(ND_STMT_EXPR, tok);
+		node->body = compound_stmt(&tok, tok->next->next)->body;
+		*rest = skip(tok, ")");
+
+		Node *cur = node->body;
+		while(cur->next){
+			cur = cur->next;
+		}
+
+		if(cur->kind != ND_EXPR_STMT){
+			error_tok(cur->tok, "statement expression returning void is not supported");
+		}
+		return node;
+
+	}
+
 	if(equal(tok, "(")){
 		Node *node = expr(&tok, tok->next);
 		*rest = skip(tok, ")");

@@ -108,6 +108,14 @@ void add_type(Node *node)
 			}
 			node->ty = node->lhs->ty->base;
 			return;
-	
+
+		case ND_STMT_EXPR:{
+			Node *stmt = node->body;
+			while(stmt->next){
+				stmt = stmt->next;
+			}
+			node->ty = stmt->lhs->ty;
+			return;
+		}
 	}
 }
