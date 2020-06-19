@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 	}
 	
 	//トークナイズする
-	Token *tok = tokenize(argv[1]);
+	Token *tok = tokenize_file(argv[1]);
 	Program *prog = parse(tok);
 
 	// Assign offsets to local variables.

@@ -1,7 +1,9 @@
 #include "1cc.h"
 
-//Input string
+//Input filename
+static char *current_filename;
 
+//Input string
 static char *current_input;
 
 //エラーを報告するための関数
@@ -17,8 +19,30 @@ void error(char *fmt, ...)
 
 static void verror_at(char *loc, char *fmt, va_list ap)
 {
-	int pos = loc - current_input;
-	fprintf(stderr, "%s\n", current_input);
+	//find a line containing 'loc'
+	char *line = loc;
+	while(current_input < line && line[-1] != '\n'){
+		line--;
+	}
+
+	char *end = loc;
+	while(*end != '\n'){
+		end++;
+	}
+
+	//get a line number
+	int line_no = 1;
+	for(char *p = current_input; p < line; p++){
+		if(*p == '\n'){
+			line_no++;
+		}
+	}
+
+	//print out the line
+	int indent = fprintf(stderr, "%s:%d", current_filename, line_no);
+	fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+	int pos = loc - line + indent;
 	fprintf(stderr, "%*s", pos, " ");
 	fprintf(stderr, "^");
 	vfprintf(stderr, fmt, ap);
@@ -228,8 +252,9 @@ static void convert_keyword(Token *tok)
 }
 
 //入力文字列pをトークナイズしてそれを返す
-Token *tokenize(char *p)
+Token *tokenize(char *filename, char *p)
 {
+	current_filename = filename;
 	current_input = p;
 	Token head = {};
 	Token *cur = &head;
@@ -287,3 +312,96 @@ Token *tokenize(char *p)
 	convert_keyword(head.next);//ここでキーワードを確認して変換させる
 	return head.next;
 }
+
+static char *read_file(char *path)
+{
+	FILE *fp;
+
+	if(strcmp(path, "-") == 0){
+		// By convention, read from stdin if a given filename is "-".
+		fp = stdin;
+	}else{
+		fp = fopen(path, "r");
+		if(!fp){
+			error("cannot open %s: %s", path, strerror(errno));	
+		}
+	}
+
+	int buflen = 4096;
+	int nread = 0;
+	char *buf = malloc(buflen);
+
+	//Read the entire file.
+	for(;;){
+		int end = buflen - 2;//extra 2 bytes for trailing "\n\0"
+		int n = fread(buf + nread, 1, end - nread, fp);
+		if(n == 0){
+			break;
+		}
+		nread += n;
+		if(nread == end){
+			buflen *= 2;
+			buf = realloc(buf, buflen);	
+		}
+	}
+
+	//Canonicalize the last line by appending "\n"
+	//if it does not end with a newline.
+	if(nread == 0 || buf[nread - 1] != '\n'){
+		buf[nread++] = '\n';
+	}
+	buf[nread] = '\n';
+	return buf;
+}
+
+Token *tokenize_file(char *path)
+{
+	return tokenize(path, read_file(path));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
