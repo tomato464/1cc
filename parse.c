@@ -1,7 +1,23 @@
 #include "1cc.h"
 
+//Scope for local or global varoables.
+typedef struct VarScope VarScope;
+struct VarScope{
+	VarScope *next;
+	char *name;
+	int depth;
+	Var *var;
+};
+
 Var *locals;
 Var *globals;
+
+static VarScope *var_scope;
+
+//scope_depth is incremented by one at "{" and decremented
+//by one at "}".
+static int scope_depth;
+static VarScope *push_scope(char *name, Var *var);
 
 static Type *typespec(Token **rest, Token *tok);
 static Type *declarator(Token **rest, Token *tok, Type *ty);
@@ -58,6 +74,7 @@ static Var *new_gvar(char *name, Type *ty)
 	var->is_local = false;
 	var->next = globals;
 	globals = var;
+	push_scope(name, var);
 	return var;
 }
 
@@ -94,18 +111,25 @@ static long get_number(Token *tok)
 	
 }
 
+static void enter_scope(void)
+{
+	scope_depth++;
+}
+
+static void leave_scope(void)
+{
+	scope_depth--;
+	while(var_scope && var_scope->depth > scope_depth){
+		var_scope = var_scope->next;
+	}
+}
+
 //変数名を検索する。見つからなかった場合はNULLを返す。
 static Var *find_var(Token *tok)
 {
-	for(Var *var = locals; var; var = var->next){
-		if(strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len)){
-			return var;
-		}
-	}
-
-	for(Var *var = globals; var; var = var->next){
-		if(strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len)){
-			return var;
+	for(VarScope *sc = var_scope; sc; sc = sc->next){
+		if(strlen(sc->name) == tok->len && !strncmp(tok->loc, sc->name, tok->len)){
+			return sc->var;
 		}
 	}
 
@@ -119,6 +143,17 @@ static Node *new_var_node(Var *var, Token *tok)
 	return node;
 }
 
+static VarScope *push_scope(char *name, Var *var)
+{
+	VarScope *sc = calloc(1, sizeof(VarScope));
+	sc->next = var_scope;
+	sc->name = name;
+	sc->var = var;
+	sc->depth = scope_depth;
+	var_scope = sc;
+	return sc;
+}
+
 static Var *new_lvar(char *name, Type *ty)
 {
 	Var *var = calloc(1, sizeof(Var));
@@ -127,6 +162,7 @@ static Var *new_lvar(char *name, Type *ty)
 	var->is_local = true;
 	var->next = locals;
 	locals = var;
+	push_scope(name, var);
 	return var;
 }
 
@@ -247,6 +283,8 @@ static Function *funcdef(Token **rest, Token *tok)
 	Function *fn = calloc(1, sizeof(Function));
 	fn->name = get_ident(ty->name);
 
+	enter_scope();
+
 	for(Type *t = ty->params; t; t = t->next){
 		new_lvar(get_ident(t->name), t);
 	}
@@ -255,6 +293,9 @@ static Function *funcdef(Token **rest, Token *tok)
 	tok = skip(tok, "{");
 	fn->node = compound_stmt(rest, tok)->body;
 	fn->locals = locals;
+
+	leave_scope();
+
 	return fn;
 }
 
@@ -334,6 +375,9 @@ static Node *compound_stmt(Token **rest, Token *tok)
 
 	Node head = {};
 	Node *cur = &head;
+
+	enter_scope();
+
 	while(!equal(tok, "}")){
 		if(is_typename(tok)){
 			cur->next = declaration(&tok, tok);
@@ -344,6 +388,9 @@ static Node *compound_stmt(Token **rest, Token *tok)
 		}
 		add_type(cur);
 	}
+
+	leave_scope();
+
 	node->body = head.next;
 	*rest = tok->next;
 	return node;

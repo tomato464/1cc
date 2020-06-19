@@ -260,6 +260,27 @@ Token *tokenize(char *filename, char *p)
 	Token *cur = &head;
 
 	while(*p){
+		//ラインコメントをスキップ
+		if(startswith(p, "//")){
+			p += 2;
+			while( *p != '\n'){
+				p++;
+			}
+			continue;
+		}		
+
+		if(startswith(p, "/*")){
+			char *q = strstr(p + 2, "*/");
+			if(!q){
+				error_at(p, "unclosed block cpmment");
+			}
+			p = q + 2;
+			continue;
+		}
+
+		//ブロックコメントをスキップ	
+
+		
 		//空白文字をスキップ
 		if(isspace(*p)){
 			p++;

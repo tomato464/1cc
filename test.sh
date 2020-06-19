@@ -26,6 +26,14 @@ assert(){
 	fi
 }
 
+assert 2 'int main(){int x = 2; {int x = 3; } return x;}'
+assert 2 'int main(){int x = 2; {int x = 3;} { int y = 4; return x;}}'
+assert 3 'int main(){ int x = 2; { x = 3;} return x;}'
+
+assert 2 'int main(){ /* return 1; */ return 2;}'
+assert 2 'int main(){// return 1;
+			return 2;}'
+
 assert 0 'int main(){ return ({ 0;}); }'
 assert 2 'int main(){ return ({ 0; 1; 2; }); }'
 assert 1 'int main(){ return ({ 0; return 1; 2; }); return 3;}'
