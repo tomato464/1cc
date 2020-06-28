@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@ typedef enum
 {
 	TK_RESERVED,	//記号
 	TK_IDENT,	//変数
+	TK_STR,		// 文字リテラル	
 	TK_NUM,		//整数トークン
 	TK_EOF,		//入力の終わりを表すトークン
 }Tokenkind;
@@ -28,6 +30,9 @@ struct Token
 	int val;	//kindがTK_NUMの場合、その値
 	char *loc;	//トークンのロケーション
 	int len;	//トークン文字列の長さ
+
+	char *contents;	// String literal contents including terminating "\0"
+	char cont_len;	// string literal length
 };
 
 
@@ -41,7 +46,7 @@ Token *skip(Token *tok, char *op);
 bool consume(Token **rest, Token *tok, char *op);
 
 //入力文字列pをトークナイズしてそれを返す
-Token *tokenize();
+Token *tokenize_file(char *filename);
 
 //parser.c
 typedef enum{
@@ -63,8 +68,9 @@ typedef enum{
 	ND_WHILE,	//while
 	ND_FOR,		//for
 	ND_BLOCK,	// {...}
-	ND_VAR,	// Local変数
+	ND_VAR,		// Local変数
 	ND_EXPR_STMT,	// Expression statement
+	ND_STMT_EXPR,	// Statement Expression
 	ND_NUM,		// integer
 } Nodekind;
 
@@ -78,8 +84,13 @@ struct Var
 	Var *next;	//次の変数がNULL
 	char *name;	//変数の名前
 	Type *ty;	//type
-	int offset;	//RBPからのオフセット
 	bool is_local;	// local or global
+
+	//Local variable
+	int offset;	
+
+	//Global variable
+	char *init_data;
 };
 
 
@@ -99,7 +110,7 @@ struct Node
 	Node *inc;
 	Node *init;
 
-	// {...}の中身を格納
+	// block ir statement expression
 	Node *body;
 
 	// function callの時に使う、関数名
@@ -136,6 +147,7 @@ Program *parse(Token *tok);
 
 typedef enum {
 	TY_INT,
+	TY_CHAR,
 	TY_PTR,
 	TY_FUNC,
 	TY_ARRAY,
@@ -162,6 +174,7 @@ struct Type {
 };
 
 extern Type *ty_int;
+extern Type *ty_char;
 
 bool is_integer(Type *ty);
 

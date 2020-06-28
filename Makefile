@@ -1,4 +1,4 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -fno-common
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
@@ -8,9 +8,11 @@ OBJS=$(SRCS:.c=.o)
 $(OBJS): 1cc.h
 
 test: 1cc
-	./test.sh
+	./1cc tests/tests.c > tmp.s
+	gcc -static -o tmp tmp.s
+	./tmp
 
 clean:
-	rm -f 1cc *.o *~tmp*
+	rm -rf 1cc *.o *~tmp* tests/*~ tests/*.o
 
 .PHONY: test clean
